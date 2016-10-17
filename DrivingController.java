@@ -45,7 +45,8 @@ public class DrivingController {
 		System.out.println("track_width : " + track_width);
 		
 		//steer_angle = streer_coeff * (angle - toMiddle/track_width);
-		steer_angle = this.getSteerAngle(angle, toMiddle, track_width, streer_coeff);
+		corr_toMiddle = this.getCorrToMiddle(dist_cars, toMiddle, track_width, track_dist_straight, track_curve_type);
+		steer_angle = this.getSteerAngle(angle, corr_toMiddle, track_width, streer_coeff);
 		System.out.println("steer_angle : " + steer_angle);
 		////////////////////// output values		
 		cmd.steer = steer_angle;
@@ -104,46 +105,140 @@ public class DrivingController {
 		return steer_angle;
 	}
 	
-	private double getCorrToMiddle(double[] curr_aicars, double curr_toMiddle, double curr_track_width) {
+	private double getCorrToMiddle(double[] curr_aicars, double curr_toMiddle, double curr_track_width, double curr_track_dist_straight, double curr_track_curve_type) {
 		double corr_toMiddle = 0.0;
 		double tmp_ai_dist = 0.0;
 		double tmp_ai_toMiddle = 0.0;
 		
 		int[] tmp_r_ai = new int[5];
 		int[] tmp_l_ai = new int[5];
+		int[] tmp_c_ai = new int[5];
 		int tmp_r_ai_cnt = 0;
 		int tmp_r_curr_idx = 0;
 		int tmp_l_ai_cnt = 0;
 		int tmp_l_curr_idx = 0;
+		int tmp_c_ai_cnt = 0;
 		
 		for(int i=0 ; i<5 ; i++){
 			tmp_r_ai[i] = -1;
 			tmp_l_ai[i] = -1;
+			tmp_c_ai[i] = -1;
 		}
 		
-		for(int i=0 ; i<curr_aicars.length ; i++) {
-			if(curr_aicars[i] < 0) {
-				i++;
+		for(int i=1 ; i<curr_aicars.length ; i+=2) {
+			//
+			System.out.println("AI Car #" + (i+1)/2 + " : " + curr_aicars[i-1] + ", " + curr_aicars[i]);
+			// 내 차보다 뒤에 있는 ai차량은 일단 제외
+			if(curr_aicars[i-1] < 0) {
 				continue;
 			}
 			
-			i++;
-			
 			// 내 차의 왼쪽에 위치하는 ai차량을 toMiddle 거리순으로 array에 저장
 			if(curr_aicars[i] < 0) {
-				if(tmp_l_ai_cnt == 0) {
-					tmp_l_ai[tmp_l_ai_cnt] = i;
+				if(tmp_l_ai_cnt == 0) { // 첫번째 왼쪽 ai차량의 배열 인덱스
+					tmp_l_ai[0] = i;
 				} else {
-					for(int j=0 ; j<tmp_l_ai_cnt ; j++) {
+					
+					for(int j=0 ; j<5 ; j++) {
+						if(tmp_l_ai[j] < 0) {
+							tmp_l_ai[j] = i;
+							break;
+						} else {
+							
+							if(curr_aicars[tmp_l_ai[j]] < curr_aicars[i]) {
+								for(int k=j ; k < tmp_l_ai_cnt ; k++) {
+									tmp_l_ai[k+1] = tmp_l_ai[k];
+								}
+								
+								tmp_l_ai[j] = i;
+							}
+						}
+						
 						
 					}
 				}
 				
 				tmp_l_ai_cnt++;
+			
+			// 내 차의 오른쪽에 위치하는 ai차량을 toMiddle 거리순으로 array에 저장	
+			} else if (curr_aicars[i] > 0) {
+				if(tmp_r_ai_cnt == 0) { // 첫번째 왼쪽 ai차량의 배열 인덱스
+					tmp_r_ai[0] = i;
+				} else {
+					
+					for(int j=0 ; j<5 ; j++) {
+						if(tmp_r_ai[j] < 0) {
+							tmp_r_ai[j] = i;
+							break;
+						} else {
+							
+							if(curr_aicars[tmp_r_ai[j]] < curr_aicars[i]) {
+								for(int k=j ; k < tmp_r_ai_cnt ; k++) {
+									tmp_r_ai[k+1] = tmp_r_ai[k];
+								}
+								
+								tmp_r_ai[j] = i;
+							}
+						}
+						
+						
+					}
+				}
 				
+				tmp_r_ai_cnt++;
+				
+			} else {
+				tmp_c_ai[tmp_c_ai_cnt] = i;
+				tmp_c_ai_cnt++;
 			}
 			
 		}
+		
+		// 앞쪽에 우회전 코스가 있으면 우측 우선
+		//if(curr_track_curve_type == 1) {
+			
+			// 오른쪽에 ai차량이 없는 경우
+			//if(tmp_r_ai_cnt == 0) {
+			//	corr_toMiddle = curr_track_width/2 + curr_toMiddle;
+			//} else {
+			//	
+			//}
+			
+		//}
+		
+		// 오른쪽에 ai 차량이 없는 경우
+		if(tmp_r_ai_cnt == 0 && tmp_l_ai_cnt > 0) {
+			corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
+		
+	    // 왼쪽에 ai 차량이 없는 경우
+		} else if (tmp_r_ai_cnt > 0 && tmp_l_ai_cnt == 0) {
+			corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
+		
+		// 양쪽 모두 차량이 있는 경우 중간으로 ... 두 차량 사이가 좁은 경우 (2M 이하)는 거리가 좀 더 떨어진 쪽으로
+		} else if (tmp_r_ai_cnt > 0 && tmp_l_ai_cnt > 0) {
+			
+			if(curr_aicars[tmp_r_ai[0]] - curr_aicars[tmp_l_ai[0]] > 2.0) {
+				corr_toMiddle = curr_aicars[tmp_l_ai[0]] + (curr_aicars[tmp_r_ai[0]] - curr_aicars[tmp_l_ai[0]])/2;
+			} else {
+				if(curr_aicars[tmp_r_ai[0]-1] > curr_aicars[tmp_l_ai[0]-1]) {
+					corr_toMiddle = curr_aicars[tmp_r_ai[0]] ;
+				} else {
+					corr_toMiddle = curr_aicars[tmp_l_ai[0]] ;
+				}
+			}
+		} else {
+			if(tmp_c_ai_cnt > 0) {
+				if (curr_toMiddle > 0) {
+					corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
+				} else {
+					corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
+				}
+			} else {
+				corr_toMiddle = curr_toMiddle;
+			}
+		}
+		
+		System.out.println("corr_toMiddle : " + corr_toMiddle);
 		
 		return corr_toMiddle;
 	}
