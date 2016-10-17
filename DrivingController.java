@@ -37,14 +37,15 @@ public class DrivingController {
 		// To-Do : Make your driving algorithm
 		
 		double steer_angle = 0.0;
-		double streer_coeff = 0.5;
+		double streer_coeff = 1.0;
+		double corr_toMiddle = 0.0;
 		System.out.println("toMiddle : " + toMiddle);
 		System.out.println("angle : " + angle);
 		System.out.println("speed : " + speed);
 		System.out.println("track_width : " + track_width);
 		
-		steer_angle = streer_coeff * (angle - toMiddle/track_width);
-		
+		//steer_angle = streer_coeff * (angle - toMiddle/track_width);
+		steer_angle = this.getSteerAngle(angle, toMiddle, track_width, streer_coeff);
 		System.out.println("steer_angle : " + steer_angle);
 		////////////////////// output values		
 		cmd.steer = steer_angle;
@@ -93,5 +94,57 @@ public class DrivingController {
 				}
 			}
 		}
+	}
+	
+	private double getSteerAngle(double curr_angle, double curr_toMiddle, double curr_track_width, double streer_coeff) {
+		double steer_angle = 0.0;
+		
+		steer_angle = streer_coeff * (curr_angle - curr_toMiddle/curr_track_width);
+		
+		return steer_angle;
+	}
+	
+	private double getCorrToMiddle(double[] curr_aicars, double curr_toMiddle, double curr_track_width) {
+		double corr_toMiddle = 0.0;
+		double tmp_ai_dist = 0.0;
+		double tmp_ai_toMiddle = 0.0;
+		
+		int[] tmp_r_ai = new int[5];
+		int[] tmp_l_ai = new int[5];
+		int tmp_r_ai_cnt = 0;
+		int tmp_r_curr_idx = 0;
+		int tmp_l_ai_cnt = 0;
+		int tmp_l_curr_idx = 0;
+		
+		for(int i=0 ; i<5 ; i++){
+			tmp_r_ai[i] = -1;
+			tmp_l_ai[i] = -1;
+		}
+		
+		for(int i=0 ; i<curr_aicars.length ; i++) {
+			if(curr_aicars[i] < 0) {
+				i++;
+				continue;
+			}
+			
+			i++;
+			
+			// 내 차의 왼쪽에 위치하는 ai차량을 toMiddle 거리순으로 array에 저장
+			if(curr_aicars[i] < 0) {
+				if(tmp_l_ai_cnt == 0) {
+					tmp_l_ai[tmp_l_ai_cnt] = i;
+				} else {
+					for(int j=0 ; j<tmp_l_ai_cnt ; j++) {
+						
+					}
+				}
+				
+				tmp_l_ai_cnt++;
+				
+			}
+			
+		}
+		
+		return corr_toMiddle;
 	}
 }
