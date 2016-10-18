@@ -37,21 +37,33 @@ public class DrivingController {
 		// To-Do : Make your driving algorithm
 		
 		double steer_angle = 0.0;
-		double streer_coeff = 1.0;
+		double streer_coeff = 0.5;
 		double corr_toMiddle = 0.0;
+		double corr_break = 0.0;
+		double corr_accel = 0.3;
 		System.out.println("toMiddle : " + toMiddle);
 		System.out.println("angle : " + angle);
 		System.out.println("speed : " + speed);
 		System.out.println("track_width : " + track_width);
 		
 		//steer_angle = streer_coeff * (angle - toMiddle/track_width);
-		corr_toMiddle = this.getCorrToMiddle(dist_cars, toMiddle, track_width, track_dist_straight, track_curve_type);
+		corr_toMiddle = this.getCorrToMiddle(dist_cars, toMiddle, speed, track_width, track_dist_straight, track_curve_type);
+		streer_coeff = this.getSteerCoeff(speed, track_dist_straight);
 		steer_angle = this.getSteerAngle(angle, corr_toMiddle, track_width, streer_coeff);
 		System.out.println("steer_angle : " + steer_angle);
+		System.out.println("curr damage : " + damage + "(" + damage_max + ")");
+		
+		if(track_dist_straight < 20.0 && speed > 130.0){
+			corr_break = 0.5;
+			corr_accel = 0.0;
+		} else {
+			corr_break = 0.0;
+			corr_accel = 0.3;
+		}
 		////////////////////// output values		
 		cmd.steer = steer_angle;
-		cmd.accel = 0.2;
-		cmd.brake = 0.0;
+		cmd.accel = corr_accel;
+		cmd.brake = corr_break;
 		cmd.backward = DrivingInterface.gear_type_forward;
 		////////////////////// END output values
 		
@@ -105,7 +117,18 @@ public class DrivingController {
 		return steer_angle;
 	}
 	
-	private double getCorrToMiddle(double[] curr_aicars, double curr_toMiddle, double curr_track_width, double curr_track_dist_straight, double curr_track_curve_type) {
+	private double getSteerCoeff(double curr_speed, double curr_track_dist_straight) {
+		double steer_coeff = 0.5;
+		
+		if(curr_speed > 110 && curr_track_dist_straight > 20) {
+			steer_coeff = 0.3;
+		}
+		
+		
+		return steer_coeff;
+	}
+	
+	private double getCorrToMiddle(double[] curr_aicars, double curr_toMiddle, double curr_speed, double curr_track_width, double curr_track_dist_straight, double curr_track_curve_type) {
 		double corr_toMiddle = 0.0;
 		double tmp_ai_dist = 0.0;
 		double tmp_ai_toMiddle = 0.0;
@@ -128,13 +151,20 @@ public class DrivingController {
 		for(int i=1 ; i<curr_aicars.length ; i+=2) {
 			//
 			System.out.println("AI Car #" + (i+1)/2 + " : " + curr_aicars[i-1] + ", " + curr_aicars[i]);
-			// 내 차보다 뒤에 있는 ai차량은 일단 제외
-			if(curr_aicars[i-1] < 0) {
+			
+			// 처음 출발시는 모두 0.0이므로 제외
+			if(curr_speed == 0.0){
 				continue;
 			}
 			
+			// 내 차보다 50M 뒤 50M 앞에 있는 ai차량은 일단 제외
+			if(curr_aicars[i-1] <= -20.0 || curr_aicars[i-1] >= 50.0) {
+				continue;
+			}
+			
+			/*================ 내차의 오른쪽 왼쪽 바로 앞쪽 AI 차량 배열 생성 ====================*/
 			// 내 차의 왼쪽에 위치하는 ai차량을 toMiddle 거리순으로 array에 저장
-			if(curr_aicars[i] < 0) {
+			if(curr_aicars[i] > 0.0) {
 				if(tmp_l_ai_cnt == 0) { // 첫번째 왼쪽 ai차량의 배열 인덱스
 					tmp_l_ai[0] = i;
 				} else {
@@ -161,7 +191,7 @@ public class DrivingController {
 				tmp_l_ai_cnt++;
 			
 			// 내 차의 오른쪽에 위치하는 ai차량을 toMiddle 거리순으로 array에 저장	
-			} else if (curr_aicars[i] > 0) {
+			} else if (curr_aicars[i] < 0.0) {
 				if(tmp_r_ai_cnt == 0) { // 첫번째 왼쪽 ai차량의 배열 인덱스
 					tmp_r_ai[0] = i;
 				} else {
@@ -193,48 +223,88 @@ public class DrivingController {
 			}
 			
 		}
+		/*================ 내차의 오른쪽 왼쪽 바로 앞쪽 AI 차량 배열 생성 끝 ====================*/
 		
-		// 앞쪽에 우회전 코스가 있으면 우측 우선
-		//if(curr_track_curve_type == 1) {
-			
-			// 오른쪽에 ai차량이 없는 경우
-			//if(tmp_r_ai_cnt == 0) {
-			//	corr_toMiddle = curr_track_width/2 + curr_toMiddle;
-			//} else {
-			//	
-			//}
-			
-		//}
 		
-		// 오른쪽에 ai 차량이 없는 경우
+		// ai 차량이 왼쪽에 있고 오른쪽에 없는 경우
 		if(tmp_r_ai_cnt == 0 && tmp_l_ai_cnt > 0) {
-			corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
+			System.out.println("Left ai car : " + tmp_l_ai_cnt);
+			
+			// 바로 앞에 ai 차량이 있는 경우 오른방향으로
+			if(tmp_c_ai_cnt > 0  || curr_aicars[tmp_l_ai[0]] < 3.0) {
+				corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
+			} else {
+				corr_toMiddle = curr_toMiddle;
+			}
 		
-	    // 왼쪽에 ai 차량이 없는 경우
+	    // ai 차량이 오른쪽에 있고 왼쪽에 없는 경우
 		} else if (tmp_r_ai_cnt > 0 && tmp_l_ai_cnt == 0) {
-			corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
+			System.out.println("Right ai car : " + tmp_r_ai_cnt);
+			
+			// 바로 앞에 ai 차량이 있는 경우 왼쪽방향으로
+			if(tmp_c_ai_cnt > 0 || curr_aicars[tmp_r_ai[0]] > -3.0) {
+				corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
+			} else {
+				corr_toMiddle = curr_toMiddle;
+			}
 		
-		// 양쪽 모두 차량이 있는 경우 중간으로 ... 두 차량 사이가 좁은 경우 (2M 이하)는 거리가 좀 더 떨어진 쪽으로
+		// 양쪽 모두 차량이 있는 경우 중간으로 ... 두 차량 사이가 좁은 경우 (3M 이하)는 거리가 좀 더 떨어진 쪽으로
 		} else if (tmp_r_ai_cnt > 0 && tmp_l_ai_cnt > 0) {
 			
-			if(curr_aicars[tmp_r_ai[0]] - curr_aicars[tmp_l_ai[0]] > 2.0) {
-				corr_toMiddle = curr_aicars[tmp_l_ai[0]] + (curr_aicars[tmp_r_ai[0]] - curr_aicars[tmp_l_ai[0]])/2;
-			} else {
-				if(curr_aicars[tmp_r_ai[0]-1] > curr_aicars[tmp_l_ai[0]-1]) {
-					corr_toMiddle = curr_aicars[tmp_r_ai[0]] ;
-				} else {
-					corr_toMiddle = curr_aicars[tmp_l_ai[0]] ;
-				}
-			}
-		} else {
+			System.out.println("Left and Right ai car : " + tmp_l_ai_cnt + "," + tmp_r_ai_cnt);
+			
 			if(tmp_c_ai_cnt > 0) {
+				if(curr_aicars[tmp_r_ai[0]] - curr_aicars[tmp_l_ai[0]] > 3.0) {
+					corr_toMiddle = curr_aicars[tmp_l_ai[0]] + (curr_aicars[tmp_r_ai[0]] - curr_aicars[tmp_l_ai[0]])/2;
+				} else {
+					if(curr_aicars[tmp_r_ai[0]-1] > curr_aicars[tmp_l_ai[0]-1]) {
+						corr_toMiddle = curr_aicars[tmp_r_ai[0]] ;
+					} else {
+						corr_toMiddle = curr_aicars[tmp_l_ai[0]] ;
+					}
+				}
+			} else {
+				corr_toMiddle = curr_toMiddle;
+			}
+			
+		// 양쪽에 ai차량이 없는 경우	
+		} else {
+			
+			if(tmp_c_ai_cnt > 0) {
+				System.out.println("Forward ai car : " + tmp_c_ai_cnt);
+				
 				if (curr_toMiddle > 0) {
 					corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
 				} else {
 					corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
 				}
 			} else {
-				corr_toMiddle = curr_toMiddle;
+				System.out.println("No ai car forward. Go Go!!!");
+				System.out.println("track_curve_type : " + curr_track_curve_type);
+				System.out.println("track_dist_straight : " + curr_track_dist_straight);
+				
+				// 우회전 코스
+				if(curr_track_curve_type == 1.0) {
+					System.out.println("Right Curve " + curr_track_dist_straight + " forward.");
+					//전방 20M 전까지는 좌측으로 주행
+					if(curr_track_dist_straight > 20) {
+						corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
+					} else {
+						corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
+					}
+					
+				} else if(curr_track_curve_type == 2.0){
+					System.out.println("Left Curve " + curr_track_dist_straight + " forward.");
+					
+					if(curr_track_dist_straight > 20) {
+						corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
+					} else {
+						corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
+					}
+				} else {
+				
+					corr_toMiddle = curr_toMiddle;
+				}
 			}
 		}
 		
