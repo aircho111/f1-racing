@@ -40,14 +40,17 @@ public class DrivingController {
 		double streer_coeff = 0.5;
 		double corr_toMiddle = 0.0;
 		double corr_break = 0.0;
-		double corr_accel = 0.3;
-		System.out.println("toMiddle : " + toMiddle);
+		double corr_accel = 0.2;
+		System.out.println("===================================================");
+		System.out.println("toStart : " + toStart);
+		System.out.println("toMiddle : " + toMiddle); // 음수이면 중앙에서 오른쪽, 양수이면 왼쪽
 		System.out.println("angle : " + angle);
-		System.out.println("speed : " + speed);
+		System.out.println("speed : " + speed);  // 수치가 이상하게 들어옴...
 		System.out.println("track_width : " + track_width);
+		System.out.println("---------------------------------------------------");
 		
-		//steer_angle = streer_coeff * (angle - toMiddle/track_width);
 		corr_toMiddle = this.getCorrToMiddle(dist_cars, toMiddle, speed, track_width, track_dist_straight, track_curve_type);
+		
 		if(corr_toMiddle == -100.0) {
 			corr_break = 0.5;
 			corr_accel = 0.0;
@@ -58,12 +61,25 @@ public class DrivingController {
 		System.out.println("steer_angle : " + steer_angle);
 		System.out.println("curr damage : " + damage + "(" + damage_max + ")");
 		
-		if(track_dist_straight < 20.0 && speed > 130.0){
-			corr_break = 10.0;
-			corr_accel = 0.0;
+		if(track_dist_straight < 20.0){
+			if( speed > 28.0) {
+				corr_break = 0.2;
+				//corr_accel = 0.0;
+			//} else if ( speed > 15 && speed <= 28.0){
+			//	corr_break = 0.1;
+			//	corr_accel = 0.0;
+			} else {
+				corr_break = 0.0;
+				//corr_accel = 0.1;				
+			}
 		} else {
-			corr_break = 0.0;
-			corr_accel = 0.2;
+			if( speed > 28.0) {
+				corr_break = 0.0;
+				//corr_accel = 0.1;
+			} else {
+				corr_break = 0.0;
+				//corr_accel = 0.2;
+			}
 		}
 		////////////////////// output values		
 		cmd.steer = steer_angle;
@@ -123,19 +139,20 @@ public class DrivingController {
 	}
 	
 	private double getSteerCoeff(double curr_speed, double curr_track_dist_straight) {
-		double steer_coeff = 0.3;
+		double steer_coeff = 1.0;
 		
-		if(curr_speed > 110 && curr_track_dist_straight > 20) {
-			steer_coeff = 0.1;
+		if(curr_track_dist_straight > 30) {
+			if(curr_speed > 28.0) { 
+				steer_coeff = 0.1;
+			} else if( curr_speed > 25 && curr_speed <= 28.0) {
+				steer_coeff = 0.3;
+			} else if( curr_speed > 10 && curr_speed <= 25.0) {
+				steer_coeff = 0.5;
+			} else {
+				steer_coeff = 1.0;
+			}
 		}
-		
-		//if(curr_speed < 50) {
-		//	steer_coeff = 20;
-		//}
-		
-		
-		
-		
+
 		return steer_coeff;
 	}
 	
@@ -163,21 +180,20 @@ public class DrivingController {
 			//
 			System.out.println("AI Car #" + (i+1)/2 + " : " + curr_aicars[i-1] + ", " + curr_aicars[i]);
 			
+			
 			// 처음 출발시는 모두 0.0이므로 제외
 			if(curr_speed == 0.0){
 				continue;
 			}
 			
-			// 내 차보다 50M 뒤 50M 앞에 있는 ai차량은 일단 제외
-			if(curr_aicars[i-1] <= -20.0 || curr_aicars[i-1] >= 50.0) {
+			// 내 차보다 4M 뒤 50M 앞에 있는 ai차량은 일단 제외
+			if(curr_aicars[i-1] <= -4.0 || curr_aicars[i-1] >= 50.0) {
 				continue;
 			}
 			
-
-			
 			// 내차의 전방 충돌 위치 ai 차량 수
 			if((curr_aicars[i-1] > 4.0 && curr_aicars[i-1] < 50.0) 
-					&& (curr_aicars[i] > -1.0 && curr_aicars[i] < 1.0)) {
+					&& (curr_aicars[i] > -4.5 && curr_aicars[i] < 4.5)) {
 				tmp_c_ai[tmp_c_ai_cnt] = i;
 				tmp_c_ai_cnt++;
 				System.out.println("tmp_c_ai : " + tmp_c_ai_cnt);
@@ -240,7 +256,6 @@ public class DrivingController {
 					tmp_r_ai_cnt++;
 					
 					System.out.println("tmp_r_ai : " + tmp_r_ai_cnt);
-
 				}
 				
 			}
@@ -337,12 +352,13 @@ public class DrivingController {
 			if(tmp_c_ai_cnt > 0) {
 				System.out.println("Forward ai car : " + tmp_c_ai_cnt);
 				
-				if (curr_toMiddle > 0) {
+				//if (curr_toMiddle > 0) {
+				if ( curr_aicars[tmp_c_ai[0]] > 0) { // 오른쪽에 ai차량이 있을때
 					//corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
-					corr_toMiddle = 3.0;
+					corr_toMiddle = 4.5;
 				} else {
 					//corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
-					corr_toMiddle = -3.0;
+					corr_toMiddle = -4.5;
 				}
 			} else {
 				System.out.println("No ai car forward. Go Go!!!");
@@ -352,20 +368,28 @@ public class DrivingController {
 				// 우회전 코스
 				if(curr_track_curve_type == 1.0) {
 					System.out.println("Right Curve " + curr_track_dist_straight + " forward.");
-					//전방 20M 전까지는 좌측으로 주행
-					if(curr_track_dist_straight > 50) {
-						corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
+					//전방 50M 전까지는 좌측으로 주행
+					if(curr_track_dist_straight > 20) {
+						corr_toMiddle = (-(curr_track_width-2)/2 + curr_toMiddle)/5;
 					} else {
-						corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
+						//if(curr_track_dist_straight == 0.0) {
+						//	corr_toMiddle = 0.0;
+						//} else {
+							corr_toMiddle = ((curr_track_width-2)/2 + curr_toMiddle)/2;
+						//}
 					}
 					
 				} else if(curr_track_curve_type == 2.0){
 					System.out.println("Left Curve " + curr_track_dist_straight + " forward.");
 					
-					if(curr_track_dist_straight > 50) {
-						corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
+					if(curr_track_dist_straight > 20.0) {
+						corr_toMiddle = ((curr_track_width-2)/2 + curr_toMiddle)/5;
 					} else {
-						corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
+						//if(curr_track_dist_straight == 0.0) {
+						//	corr_toMiddle = 0.0;
+						//} else {
+							corr_toMiddle = (-(curr_track_width-2)/2 + curr_toMiddle)/2 ;
+						//}
 					}
 				} else {
 				
@@ -376,6 +400,7 @@ public class DrivingController {
 		}
 		
 		System.out.println("corr_toMiddle : " + corr_toMiddle);
+		//corr_toMiddle = curr_toMiddle;
 		
 		return corr_toMiddle;
 	}
