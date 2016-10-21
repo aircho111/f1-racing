@@ -120,6 +120,9 @@ public class DrivingController {
 		if(emer_turn_yn > 0.0) {
 			streer_coeff = 1.0;
 		}
+		
+		System.out.println("emergency turn yn : " + emer_turn_yn);
+		
 		// 차량이 회전할 angle값 계산
 		steer_angle = this.getSteerAngle(angle, corr_toMiddle, track_width, streer_coeff);
 		
@@ -556,13 +559,18 @@ public class DrivingController {
 						
 						// 내 차의 진행 방향이 우측인 경우는 그대로 우측으로
 						//if(curr_angle >= 0.0) {
-							corr_toMiddle = tmp_fst_forward_width + my_car_width;
+							if(curr_angle < 0.0) {
+								corr_toMiddle = tmp_fst_forward_width + my_car_width + 2.0;
+							} else {
+								corr_toMiddle = tmp_fst_forward_width + my_car_width + 1.0;
+							}
 							
-							// 트랙을 벗어나는 경우 반대방향으로
-							if((curr_track_width/2 + curr_toMiddle) < corr_toMiddle ) {
-								corr_toMiddle = tmp_fst_forward_width - my_car_width;
+							// 직선주로에서 트랙을 벗어나는 경우 반대방향으로
+							if(curr_track_dist_straight > 0.0 && ((curr_track_width/2 + curr_toMiddle) < corr_toMiddle) ) {
+								corr_toMiddle = tmp_fst_forward_width - my_car_width - 2.0;
 								//corr_toMiddle = curr_toMiddle;
 							}
+							
 							
 						//} else {
 						//	corr_toMiddle = tmp_fst_forward_width - my_car_width;
@@ -579,12 +587,16 @@ public class DrivingController {
 						// 내 차의 진행 방향이 좌측인 경우는 그대로 좌측으로
 						//if(curr_angle <= 0.0) {
 						//corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
-							corr_toMiddle = tmp_fst_forward_width - my_car_width;
 						
-						
-							// 트랙을 벗어나는 경우 반대으로
-							if((-curr_track_width/2 + curr_toMiddle) > corr_toMiddle ) {
-								corr_toMiddle = tmp_fst_forward_width + my_car_width;
+							if(curr_angle > 0.0) {
+								corr_toMiddle = tmp_fst_forward_width - my_car_width - 2.0;
+							} else {
+								corr_toMiddle = tmp_fst_forward_width - my_car_width - 1.0;
+							}
+
+							// 직선주로에서 트랙을 벗어나는 경우 반대으로
+							if(curr_track_dist_straight > 0.0 && ((-curr_track_width/2 + curr_toMiddle) > corr_toMiddle) ) {
+								corr_toMiddle = tmp_fst_forward_width + my_car_width + 2.0;
 								//corr_toMiddle = curr_toMiddle;
 							}
 						//} else {
