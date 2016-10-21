@@ -280,145 +280,65 @@ public class DrivingController {
 				System.out.println("   --> 전방 ai 차량수 : " + tmp_c_ai_cnt);
 			} else {
 				
-				// ai차량이 내 차보다 앞에 있는 경우
-//				if(curr_aicars[i-1] > 0.0) {
-					
-					// 내 차의 왼쪽에 위치하는 ai차량을  거리순으로 array에 저장
-					if(tmp_ai_dist < 0.0) {
-						if(tmp_l_ai_cnt == 0) { // 첫번째 왼쪽 ai차량의 배열 인덱스
-							tmp_l_ai[0] = i;
-						} else {
-							
-							for(int j=0 ; j<10 ; j++) {
-								if(tmp_l_ai[j] < 0) {
+				// 내 차의 왼쪽에 위치하는 ai차량을  거리순으로 array에 저장
+				if(tmp_ai_dist < 0.0) {
+					if(tmp_l_ai_cnt == 0) { // 첫번째 왼쪽 ai차량의 배열 인덱스
+						tmp_l_ai[0] = i;
+					} else {
+						
+						for(int j=0 ; j<10 ; j++) {
+							if(tmp_l_ai[j] < 0) {
+								tmp_l_ai[j] = i;
+								break;
+							} else {
+								tmp_pre_ai_dist = this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_l_ai[j]]);
+								if(tmp_pre_ai_dist < tmp_ai_dist) {
+									for(int k=j ; k < tmp_l_ai_cnt ; k++) {
+										tmp_l_ai[k+1] = tmp_l_ai[k];
+									}
+									
 									tmp_l_ai[j] = i;
-									break;
-								} else {
-									tmp_pre_ai_dist = this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_l_ai[j]]);
-									if(tmp_pre_ai_dist < tmp_ai_dist) {
-										for(int k=j ; k < tmp_l_ai_cnt ; k++) {
-											tmp_l_ai[k+1] = tmp_l_ai[k];
-										}
-										
-										tmp_l_ai[j] = i;
-									}
 								}
-								
-								
 							}
-						}
-						
-						tmp_l_ai_cnt++;
-						
-						System.out.println("   --> 좌측 ai 차량수 : " + tmp_l_ai_cnt);
-					
-					// 내 차의 오른쪽에 위치하는 ai차량을 거리순으로 array에 저장	
-					} else if (tmp_ai_dist >= 0.0) {
-						if(tmp_r_ai_cnt == 0) { // 첫번째 왼쪽 ai차량의 배열 인덱스
-							tmp_r_ai[0] = i;
-						} else {
 							
-							for(int j=0 ; j<10 ; j++) {
-								if(tmp_r_ai[j] < 0) {
-									tmp_r_ai[j] = i;
-									break;
-								} else {
-									
-									tmp_pre_ai_dist = this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_r_ai[j]]);
-									
-									if(tmp_pre_ai_dist < tmp_ai_dist) {
-										for(int k=j ; k < tmp_r_ai_cnt ; k++) {
-											tmp_r_ai[k+1] = tmp_r_ai[k];
-										}
-										
-										tmp_r_ai[j] = i;
-									}
-								}
-								
-							}
+							
 						}
-						
-						tmp_r_ai_cnt++;
-						
-						System.out.println("   --> 우측 ai 차량수 : " + tmp_r_ai_cnt);
 					}
 					
-				// ai차량이 내 차보다 뒤에 있는 경우	
-//				} else {
+					tmp_l_ai_cnt++;
 					
-					
-//					if((curr_aicars[i-1] > -10.0 && curr_aicars[i-1] < 0.0) 
-//							&& (curr_aicars[i] > -2.5 && curr_aicars[i] < 2.5)) {
-//						tmp_b_ai[tmp_b_ai_cnt] = i;
-//						tmp_b_ai_cnt++;
-//						System.out.println("   --> 후방 ai 차량수 : " + tmp_b_ai_cnt);
-//					} else {
-					
-					// 후방 좌측 차량인 경우
-//						if(tmp_ai_dist < 0.0) {
-//							if(tmp_l_ai_cnt == 0) { // 첫번째 왼쪽 ai차량의 배열 인덱스
-//								tmp_l_ai[0] = i;
-//							} else {
-//								
-//								for(int j=0 ; j<5 ; j++) {
-//									if(tmp_l_ai[j] < 0) {
-//										tmp_l_ai[j] = i;
-//										break;
-//									} else {
-//										
-//										tmp_pre_ai_dist = this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_l_ai[j]]);
-//										
-//										if(tmp_pre_ai_dist < tmp_ai_dist) {
-//											for(int k=j ; k < tmp_l_ai_cnt ; k++) {
-//												tmp_l_ai[k+1] = tmp_l_ai[k];
-//											}
-//											
-//											tmp_l_ai[j] = i;
-//										}
-//									}
-//									
-//									
-//								}
-//							}
-//							
-//							tmp_l_ai_cnt++;
-//							
-//							System.out.println("   --> 후방 좌측 ai 차량수 : " + tmp_l_ai_cnt);
-//						
-//						// 내 차의 오른쪽에 위치하는 ai차량을 toMiddle 거리순으로 array에 저장	
-//						} else if (tmp_ai_dist >= 0.0) {
-//							if(tmp_r_ai_cnt == 0) { // 첫번째 왼쪽 ai차량의 배열 인덱스
-//								tmp_r_ai[0] = i;
-//							} else {
-//								
-//								for(int j=0 ; j<5 ; j++) {
-//									if(tmp_r_ai[j] < 0) {
-//										tmp_r_ai[j] = i;
-//										break;
-//									} else {
-//										
-//										tmp_pre_ai_dist = this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_r_ai[j]]);
-//										
-//										if(tmp_pre_ai_dist < tmp_ai_dist) {
-//											for(int k=j ; k < tmp_r_ai_cnt ; k++) {
-//												tmp_r_ai[k+1] = tmp_r_ai[k];
-//											}
-//											
-//											tmp_r_ai[j] = i;
-//										}
-//									}
-//									
-//								}
-//							}
-//							
-//							tmp_r_ai_cnt++;
-//							
-//							System.out.println("   --> 후방 우측 ai 차량수 : " + tmp_r_ai_cnt);
-//						}
-////					}
-//					
-//				}
+					System.out.println("   --> 좌측 ai 차량수 : " + tmp_l_ai_cnt);
 				
+				// 내 차의 오른쪽에 위치하는 ai차량을 거리순으로 array에 저장	
+				} else if (tmp_ai_dist >= 0.0) {
+					if(tmp_r_ai_cnt == 0) { // 첫번째 왼쪽 ai차량의 배열 인덱스
+						tmp_r_ai[0] = i;
+					} else {
+						
+						for(int j=0 ; j<10 ; j++) {
+							if(tmp_r_ai[j] < 0) {
+								tmp_r_ai[j] = i;
+								break;
+							} else {
+								
+								tmp_pre_ai_dist = this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_r_ai[j]]);
+								
+								if(tmp_pre_ai_dist < tmp_ai_dist) {
+									for(int k=j ; k < tmp_r_ai_cnt ; k++) {
+										tmp_r_ai[k+1] = tmp_r_ai[k];
+									}
+									
+									tmp_r_ai[j] = i;
+								}
+							}
+							
+						}
+					}
+					
+					tmp_r_ai_cnt++;
+					
+					System.out.println("   --> 우측 ai 차량수 : " + tmp_r_ai_cnt);
+				}
 			}
 			
 		} /* for문 끝 */
@@ -552,67 +472,41 @@ public class DrivingController {
 				
 				tmp_fst_forward_width = this.getAiSideDist(curr_toMiddle,curr_aicars[tmp_c_ai[0]]);
 				
-				//if ( tmp_fst_forward_width > -2.5 && tmp_fst_forward_width < 2.5) {
 				
-					if ( tmp_fst_forward_width < 0.0) { // 왼쪽에 ai차량이 있을때
-					    //corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
-						
-						// 내 차의 진행 방향이 우측인 경우는 그대로 우측으로
-						//if(curr_angle >= 0.0) {
-							if(curr_angle < 0.0) {
-								corr_toMiddle = tmp_fst_forward_width + my_car_width + 2.0;
-							} else {
-								corr_toMiddle = tmp_fst_forward_width + my_car_width + 1.0;
-							}
-							
-							// 직선주로에서 트랙을 벗어나는 경우 반대방향으로
-							if(curr_track_dist_straight > 0.0 && ((curr_track_width/2 + curr_toMiddle) < corr_toMiddle) ) {
-								corr_toMiddle = tmp_fst_forward_width - my_car_width - 2.0;
-								//corr_toMiddle = curr_toMiddle;
-							}
-							
-							
-						//} else {
-						//	corr_toMiddle = tmp_fst_forward_width - my_car_width;
-							
-							// 트랙을 벗어나는 경우 반대방향으로
-						//	if((-curr_track_width/2 + curr_toMiddle) > corr_toMiddle ) {
-						//		corr_toMiddle = tmp_fst_forward_width + my_car_width;
-								//corr_toMiddle = curr_toMiddle;
-						//	}
-						//}
-						
-						
+				if ( tmp_fst_forward_width < 0.0) { // 왼쪽에 ai차량이 있을때
+				    //corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
+					
+					if(curr_angle < 0.0) {
+						corr_toMiddle = tmp_fst_forward_width + my_car_width + 2.0;
 					} else {
-						// 내 차의 진행 방향이 좌측인 경우는 그대로 좌측으로
-						//if(curr_angle <= 0.0) {
-						//corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
-						
-							if(curr_angle > 0.0) {
-								corr_toMiddle = tmp_fst_forward_width - my_car_width - 2.0;
-							} else {
-								corr_toMiddle = tmp_fst_forward_width - my_car_width - 1.0;
-							}
-
-							// 직선주로에서 트랙을 벗어나는 경우 반대으로
-							if(curr_track_dist_straight > 0.0 && ((-curr_track_width/2 + curr_toMiddle) > corr_toMiddle) ) {
-								corr_toMiddle = tmp_fst_forward_width + my_car_width + 2.0;
-								//corr_toMiddle = curr_toMiddle;
-							}
-						//} else {
-							
-						//	corr_toMiddle = tmp_fst_forward_width + my_car_width;
-							
-							// 트랙을 벗어나는 경우 반대방향으로
-						//	if((curr_track_width/2 + curr_toMiddle) < corr_toMiddle ) {
-						//		corr_toMiddle = tmp_fst_forward_width - my_car_width;
-								//corr_toMiddle = curr_toMiddle;
-						//	}
-							
-						//}
+						corr_toMiddle = tmp_fst_forward_width + my_car_width + 1.0;
 					}
 					
-					emer_turn_yn = 1.0;
+					// 직선주로에서 트랙을 벗어나는 경우 반대방향으로
+					if(curr_track_dist_straight > 0.0 && ((curr_track_width/2 + curr_toMiddle) < corr_toMiddle) ) {
+						corr_toMiddle = tmp_fst_forward_width - my_car_width - 2.0;
+						//corr_toMiddle = curr_toMiddle;
+					}
+					
+					
+				} else {
+
+					
+					if(curr_angle > 0.0) {
+						corr_toMiddle = tmp_fst_forward_width - my_car_width - 2.0;
+					} else {
+						corr_toMiddle = tmp_fst_forward_width - my_car_width - 1.0;
+					}
+
+					// 직선주로에서 트랙을 벗어나는 경우 반대으로
+					if(curr_track_dist_straight > 0.0 && ((-curr_track_width/2 + curr_toMiddle) > corr_toMiddle) ) {
+						corr_toMiddle = tmp_fst_forward_width + my_car_width + 2.0;
+						//corr_toMiddle = curr_toMiddle;
+					}
+
+				}
+				
+				emer_turn_yn = 1.0;
 
 			} else {
 				System.out.println("No ai car forward. Go Go!!!");
@@ -622,14 +516,15 @@ public class DrivingController {
 				// 우회전 코스
 				if(curr_track_curve_type == 1.0) {
 					System.out.println("Right Curve " + curr_track_dist_straight + " forward.");
+					
 					//전방 10M 전까지는 좌측으로 주행
 					if(curr_track_dist_straight > 10.0) {
 						if(curr_toMiddle > 0) {
-							corr_toMiddle = (-(curr_track_width-2)/2 + curr_toMiddle)/5;
+							corr_toMiddle = (-(curr_track_width-3)/2 + curr_toMiddle)/5;
 							
 							// 트랙 바깥인 경우
 							if((-curr_track_width/2 + 1.5 + curr_toMiddle) > corr_toMiddle ) {
-								corr_toMiddle = -curr_track_width/2  + curr_toMiddle + 1.0;
+								corr_toMiddle = -curr_track_width/2  + curr_toMiddle + 1.5;
 							}
 							
 						} else {
@@ -639,21 +534,22 @@ public class DrivingController {
 						//if(curr_track_dist_straight == 0.0) {
 						//	corr_toMiddle = 0.0;
 						//} else {
-							corr_toMiddle = ((curr_track_width-1)/2 + curr_toMiddle)/3;
+							corr_toMiddle = ((curr_track_width - 1.5)/2 + curr_toMiddle)/2;
 						//}
 					}
 					
 				} else if(curr_track_curve_type == 2.0){
 					System.out.println("Left Curve " + curr_track_dist_straight + " forward.");
 					
+					//전방 10M 전까지는 우측으로 주행
 					if(curr_track_dist_straight > 10.0) {
 						
 						if(curr_toMiddle < 0) {
-							corr_toMiddle = ((curr_track_width-2)/2 + curr_toMiddle)/5;
+							corr_toMiddle = ((curr_track_width-3)/2 + curr_toMiddle)/5;
 							
 							// 트랙 바깥으로 벗어나는 경우 트랙까지만 경로 셋팅...전방에 있는 장애물과 부딪힐 경우도 생각해야함...
 							if((curr_track_width/2 - 1.5 + curr_toMiddle) < corr_toMiddle ) {
-								corr_toMiddle = curr_track_width/2  + curr_toMiddle - 1.0;
+								corr_toMiddle = curr_track_width/2  + curr_toMiddle - 1.5;
 							}
 							
 						} else {
@@ -664,7 +560,7 @@ public class DrivingController {
 						//if(curr_track_dist_straight == 0.0) {
 						//	corr_toMiddle = 0.0;
 						//} else {
-							corr_toMiddle = (-(curr_track_width-1)/2 + curr_toMiddle)/3 ;
+							corr_toMiddle = (-(curr_track_width - 1.5)/2 + curr_toMiddle)/2 ;
 						//}
 					}
 				} else {
