@@ -41,14 +41,15 @@ public class DrivingController {
 		double steer_angle = 0.0;
 		double streer_coeff = 0.3;
 		double corr_toMiddle = 0.0;
+		double forward_ai_dist = 100.0;
 		double emer_turn_yn = -1.0;
-		double[] corr_route = new double[2]; 
+		double[] corr_route = new double[3]; 
 		double corr_break = 0.0;
 		double corr_accel = 0.25;
 		double track_curve_level = 0.0;
 		
 		// 직전 트랙Angle과 현재 트랙Angle과의 차이로 커브의 수준 파악을 위함.
-		track_curve_level = track_current_angle - track_late_angle;
+		track_curve_level = Math.abs(track_current_angle - track_late_angle);
 		
 		System.out.println("===================================================");
 		System.out.println("toStart : " + toStart);
@@ -65,42 +66,149 @@ public class DrivingController {
 		
 		// 차량이 이동할 트랙의 상대위치 (+값은 오른쪽, -값은 왼쪽), 장애물로 인해 이동이 불가한 경우 -100 리턴
 		//corr_toMiddle = this.getCorrToMiddle(dist_cars, toMiddle, speed, angle, track_width, track_dist_straight, track_curve_type);
-		corr_route[0] = 0.0;
+		corr_route[0] = -1.0;
 		corr_route[1] = 0.0;
+		corr_route[2] = 100.0;
 		corr_route = this.getCorrToMiddle(dist_cars, toMiddle, speed, angle, track_width, track_dist_straight, track_curve_type);
 		
 		emer_turn_yn = corr_route[0];   // 장애물 피하기 위한 경로 조정인 경우 0보다 큰값
-		corr_toMiddle = corr_route[1];
+		corr_toMiddle = corr_route[1];  // 이동할 경로 (내차 중심으로 부터 횡 간격)
+		forward_ai_dist = corr_route[2];  // 이동할 경로 (내차 중심으로 부터 횡 간격)
+		
+		/* ------------ 속도 제어 함수 이관 -------------- */	
+		// 속도 제어 함수  <-- 이관함수
+		double user_best_speed  = 100;
+		user_best_speed = this.getBestSpeed(angle, forward_ai_dist, speed, track_dist_straight, track_curve_type);
+		
+		// 브레이크, 엑셀 제어 <-- 이관함수
+		double[] user_speed_ctl = this.getSpeedCtl(speed, user_best_speed, track_dist_straight);
+		
+		double user_accelCtl = user_speed_ctl[0];  
+		double user_breakCtl = user_speed_ctl[1];  
+		/* ------------ 속도 제어 함수 이관 -------------- */	
 		
 		/* --- 가속/감속 추가 함수 필요 : 진희책임 -- */		
-		// 차량의 break 조건 처리(임시로 전방 커브 10M 전에 차량의 속도가 110K 이상인 경우 브레이킹...속도값을 이상하게 주고있어 일단 시뮬레이터에서 주는 값 기준으로 계산함)
-		if(track_dist_straight < 10.0){
-			if( speed > 30.0) {
+		// 차량의 break 조건 처리(임시로 전방 커브 10M 전에 차량의 속도가 110K 이상인 경우 브레이킹...커브에서는 커브경사도별로 구분함)
+
+		if(track_dist_straight > 0.0 && track_dist_straight < 15.0){
+			if( speed > 35.0) {
+				corr_break = 0.4;
+				corr_accel = 0.1;
+			} else if( speed > 30.0  && speed <= 35.0) {
+				corr_break = 0.3;
+				corr_accel = 0.1;
+			} else if ( speed > 23.0 && speed <= 30.0){
 				corr_break = 0.2;
 				corr_accel = 0.1;
-			} else if ( speed > 23 && speed <= 30.0){
-				
-				if(track_curve_level < -0.045 || track_curve_level > 0.045) {
+			} else if ( speed > 14 && speed <= 23.0){
+				corr_break = 0.1;
+				corr_accel = 0.1;
+			} else {
+				corr_break = 0.1;
+				corr_accel = 0.2;				
+			}
+		} else if(track_dist_straight == 0.0) {
+			if( speed > 35.0) {
+				if(track_curve_level > 0.055) {
+					corr_break = 0.5;
+					corr_accel = 0.1;
+				} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
+					corr_break = 0.4;
+					corr_accel = 0.1;
+				} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
+					corr_break = 0.3;
+					corr_accel = 0.1;
+				} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
 					corr_break = 0.2;
 					corr_accel = 0.1;
 				} else {
-					corr_break = 0.0;
+					corr_break = 0.1;
 					corr_accel = 0.1;
 				}
+				
+			} else if( speed > 30.0  && speed <= 35.0) {
+				if(track_curve_level > 0.055) {
+					corr_break = 0.4;
+					corr_accel = 0.1;
+				} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
+					corr_break = 0.3;
+					corr_accel = 0.1;
+				} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
+					corr_break = 0.2;
+					corr_accel = 0.1;
+				} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
+					corr_break = 0.1;
+					corr_accel = 0.1;
+				} else {
+					corr_break = 0.1;
+					corr_accel = 0.2;
+				}
+			} else if ( speed > 23.0 && speed <= 30.0){
+				
+				if(track_curve_level > 0.055) {
+					corr_break = 0.3;
+					corr_accel = 0.1;
+				} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
+					corr_break = 0.2;
+					corr_accel = 0.1;
+				} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
+					corr_break = 0.1;
+					corr_accel = 0.1;
+				} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
+					corr_break = 0.0;
+					corr_accel = 0.1;
+				} else {
+					corr_break = 0.0;
+					corr_accel = 0.2;
+				}
+			} else if ( speed > 14 && speed <= 23.0){
+				if(track_curve_level > 0.055) {
+					corr_break = 0.2;
+					corr_accel = 0.1;
+				} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
+					corr_break = 0.1;
+					corr_accel = 0.1;
+				} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
+					corr_break = 0.0;
+					corr_accel = 0.1;
+				} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
+					corr_break = 0.0;
+					corr_accel = 0.2;
+				} else {
+					corr_break = 0.0;
+					corr_accel = 0.3;
+				}
+				
 			} else {
-				corr_break = 0.0;
-				corr_accel = 0.2;				
+				if(track_curve_level > 0.055) {
+					corr_break = 0.1;
+					corr_accel = 0.1;
+				} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
+					corr_break = 0.1;
+					corr_accel = 0.2;
+				} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
+					corr_break = 0.0;
+					corr_accel = 0.2;
+				} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
+					corr_break = 0.0;
+					corr_accel = 0.3;
+				} else {
+					corr_break = 0.0;
+					corr_accel = 0.4;
+				}
+								
 			}
+			
 		} else {
 			if( speed > 30.0) {
 				corr_break = 0.0;
-				corr_accel = 0.2;
+				corr_accel = 0.3;
 			} else if ( speed > 23 && speed <= 30.0){
 				corr_break = 0.0;
-				corr_accel = 0.25;
+				corr_accel = 0.4;
 			} else {
 				corr_break = 0.0;
-				corr_accel = 0.3;
+				corr_accel = 0.5;
 			}
 		}
 		
@@ -111,7 +219,9 @@ public class DrivingController {
 			//corr_toMiddle = 0.0;
 			corr_toMiddle = this.getKeepTrackSideDist(toMiddle, track_width);
 		}
+		
 		/*-----------------------------------------*/
+		
 		
 		/* --- 트랙조건에 따른 angle계수 추가 함수 필요 : 우열책임 -- */
 		// angle값에 대한 계수 계산(속도, 트랙의 조건에 따라 계산)
@@ -134,8 +244,15 @@ public class DrivingController {
 		
 		////////////////////// output values		
 		cmd.steer = steer_angle;
-		cmd.accel = corr_accel;
-		cmd.brake = corr_break;
+		
+		// 전방 장애물이 있는 경우 속도제어 함수에 따라 조절
+		if(emer_turn_yn > 0) {
+			cmd.accel = user_accelCtl; 
+			cmd.brake = user_breakCtl;
+		} else {
+			cmd.accel = corr_accel; 
+			cmd.brake = corr_break;
+		}
 		cmd.backward = DrivingInterface.gear_type_forward;
 		////////////////////// END output values
 		
@@ -181,6 +298,15 @@ public class DrivingController {
 		}
 	}
 	
+	
+	/**
+	 * 핸들 Angle 산출
+	 * @param curr_angle
+	 * @param curr_toMiddle
+	 * @param curr_track_width
+	 * @param streer_coeff
+	 * @return
+	 */
 	private double getSteerAngle(double curr_angle, double curr_toMiddle, double curr_track_width, double streer_coeff) {
 		double steer_angle = 0.0;
 		
@@ -189,6 +315,14 @@ public class DrivingController {
 		return steer_angle;
 	}
 	
+	/**
+	 * 핸들 Angle 산출식 계수
+	 * @param curr_angle
+	 * @param curr_toMiddle
+	 * @param curr_track_width
+	 * @param streer_coeff
+	 * @return
+	 */
 	private double getSteerCoeff(double curr_speed, double curr_track_dist_straight) {
 		double steer_coeff = 1.0;
 		
@@ -209,7 +343,17 @@ public class DrivingController {
 		return steer_coeff;
 	}
 	
-	// 경로 찾기
+	/**
+	 * 최적 경로 식별
+	 * @param curr_aicars
+	 * @param curr_toMiddle
+	 * @param curr_speed
+	 * @param curr_angle
+	 * @param curr_track_width
+	 * @param curr_track_dist_straight
+	 * @param curr_track_curve_type
+	 * @return
+	 */
 	private double[] getCorrToMiddle(double[] curr_aicars, double curr_toMiddle, double curr_speed, double curr_angle, double curr_track_width, double curr_track_dist_straight, double curr_track_curve_type) {
 		double corr_toMiddle = 0.0;
 		double emer_turn_yn = 0.0;
@@ -224,8 +368,9 @@ public class DrivingController {
 		double forward_dist_min = 2.0;
 		double forward_dist_max = 80.0;
 		double backward_dist_max = -10.0;
+		double forward_ai_dist = 100.0;
 		
-		double[] ret_corr_route = new double[2];
+		double[] ret_corr_route = new double[3];
 		
 		int[] tmp_r_ai = new int[10];
 		int[] tmp_l_ai = new int[10];
@@ -245,6 +390,7 @@ public class DrivingController {
 		
 		ret_corr_route[0] = -1.0;
 		ret_corr_route[1] = 0.0;
+		ret_corr_route[2] = 100.0;
 		
 		// 장애물 차량 배영로 부터 전방, 좌측, 우측 별 ai 차량 배열 생성
 		for(int i=1 ; i<curr_aicars.length ; i+=2) {
@@ -252,9 +398,9 @@ public class DrivingController {
 			// 내차 기준 장애차량과의 간격
 			tmp_ai_dist = this.getAiSideDist(curr_toMiddle, curr_aicars[i]);
 						
-			if(curr_aicars[i-1] > -100.0 && curr_aicars[i-1] < 100.0) {
-				System.out.println("AI Car #" + (i+1)/2 + " : " + curr_aicars[i-1] + ", " + tmp_ai_dist);
-			}
+//			if(curr_aicars[i-1] > -100.0 && curr_aicars[i-1] < 100.0) {
+//				System.out.println("AI Car #" + (i+1)/2 + " : " + curr_aicars[i-1] + ", " + tmp_ai_dist);
+//			}
 			
 			
 			// 처음 출발시는 모두 0.0이므로 제외
@@ -267,9 +413,6 @@ public class DrivingController {
 				continue;
 			}
 			
-			
-			
-			
 			/*================ 내차의 오른쪽 왼쪽 전방 AI 차량 배열 생성 ====================*/
 			// 내차의 전방 충돌 위치 ai 차량 수
 			// 전방 4~50M, 좌측우측 9M폭 사이에 있는 차량은 전방 차량으로 간주
@@ -277,7 +420,7 @@ public class DrivingController {
 					&& (tmp_ai_dist > -(my_car_width + 0.5) && tmp_ai_dist < (my_car_width + 0.5))) {
 				tmp_c_ai[tmp_c_ai_cnt] = i;
 				tmp_c_ai_cnt++;
-				System.out.println("   --> 전방 ai 차량수 : " + tmp_c_ai_cnt);
+//				System.out.println("   --> 전방 ai 차량수 : " + tmp_c_ai_cnt);
 			} else {
 				
 				// 내 차의 왼쪽에 위치하는 ai차량을  거리순으로 array에 저장
@@ -307,7 +450,7 @@ public class DrivingController {
 					
 					tmp_l_ai_cnt++;
 					
-					System.out.println("   --> 좌측 ai 차량수 : " + tmp_l_ai_cnt);
+//					System.out.println("   --> 좌측 ai 차량수 : " + tmp_l_ai_cnt);
 				
 				// 내 차의 오른쪽에 위치하는 ai차량을 거리순으로 array에 저장	
 				} else if (tmp_ai_dist >= 0.0) {
@@ -337,13 +480,13 @@ public class DrivingController {
 					
 					tmp_r_ai_cnt++;
 					
-					System.out.println("   --> 우측 ai 차량수 : " + tmp_r_ai_cnt);
+//					System.out.println("   --> 우측 ai 차량수 : " + tmp_r_ai_cnt);
 				}
 			}
 			
 		} /* for문 끝 */
 		/*================ 내차의 오른쪽 왼쪽 바로 앞쪽 AI 차량 배열 생성 끝 ====================*/
-		System.out.println("---------------------------------------------------");
+//		System.out.println("---------------------------------------------------");
 		
 		/*================ 경로 결정 ====================*/
 		// ai 차량이 왼쪽에 있고 오른쪽에 없는 경우
@@ -358,7 +501,7 @@ public class DrivingController {
 				
 				// 트랙 바깥으로 벗어나는 경우 트랙까지만 경로 셋팅...전방에 있는 장애물과 부딪힐 경우도 생각해야함...
 				if((curr_track_width/2 + curr_toMiddle) < corr_toMiddle ) {
-					corr_toMiddle = curr_track_width/2  + curr_toMiddle - 1.0;
+					corr_toMiddle = curr_track_width/2  + curr_toMiddle + 1.0;
 				}
 				
 				emer_turn_yn = 1.0;
@@ -379,7 +522,7 @@ public class DrivingController {
 				
 				// 트랙 바깥인 경우
 				if((-curr_track_width/2 + curr_toMiddle) > corr_toMiddle ) {
-					corr_toMiddle = -curr_track_width/2  + curr_toMiddle + 1.0;
+					corr_toMiddle = -curr_track_width/2  + curr_toMiddle - 1.0;
 				}
 				
 				emer_turn_yn = 1.0;
@@ -518,38 +661,36 @@ public class DrivingController {
 					System.out.println("Right Curve " + curr_track_dist_straight + " forward.");
 					
 					//전방 10M 전까지는 좌측으로 주행
-					if(curr_track_dist_straight > 10.0) {
+					if(curr_track_dist_straight > 15.0) {
+						// 현재 내 차의 위치가 중앙선 좌측에 있는 경우만 좌측으로 우측에 있는 경우는 중앙선으로
 						if(curr_toMiddle > 0) {
 							corr_toMiddle = (-(curr_track_width-3)/2 + curr_toMiddle)/5;
 							
 							// 트랙 바깥인 경우
 							if((-curr_track_width/2 + 1.5 + curr_toMiddle) > corr_toMiddle ) {
-								corr_toMiddle = -curr_track_width/2  + curr_toMiddle + 1.5;
+								corr_toMiddle = -curr_track_width/2  + curr_toMiddle + 2.0;
 							}
 							
 						} else {
 							corr_toMiddle = curr_toMiddle/5;
 						}
 					} else {
-						//if(curr_track_dist_straight == 0.0) {
-						//	corr_toMiddle = 0.0;
-						//} else {
-							corr_toMiddle = ((curr_track_width - 2.0)/2 + curr_toMiddle)/2;
-						//}
+						corr_toMiddle = ((curr_track_width - 2.0)/2 + curr_toMiddle)/2;
 					}
 					
 				} else if(curr_track_curve_type == 2.0){
 					System.out.println("Left Curve " + curr_track_dist_straight + " forward.");
 					
 					//전방 10M 전까지는 우측으로 주행
-					if(curr_track_dist_straight > 10.0) {
+					if(curr_track_dist_straight > 15.0) {
 						
+						// 현재 내 차의 위치가 중앙선 우측에 있는 경우만 우측으로 좌측에 있는 경우는 중앙선으로
 						if(curr_toMiddle < 0) {
 							corr_toMiddle = ((curr_track_width-3)/2 + curr_toMiddle)/5;
 							
 							// 트랙 바깥으로 벗어나는 경우 트랙까지만 경로 셋팅...전방에 있는 장애물과 부딪힐 경우도 생각해야함...
 							if((curr_track_width/2 - 1.5 + curr_toMiddle) < corr_toMiddle ) {
-								corr_toMiddle = curr_track_width/2  + curr_toMiddle - 1.5;
+								corr_toMiddle = curr_track_width/2  + curr_toMiddle - 2.0;
 							}
 							
 						} else {
@@ -557,15 +698,10 @@ public class DrivingController {
 						}
 						
 					} else {
-						//if(curr_track_dist_straight == 0.0) {
-						//	corr_toMiddle = 0.0;
-						//} else {
-							corr_toMiddle = (-(curr_track_width - 2.0)/2 + curr_toMiddle)/2 ;
-						//}
+						corr_toMiddle = (-(curr_track_width - 2.0)/2 + curr_toMiddle)/2 ;
 					}
 				} else {
 				
-					//corr_toMiddle = curr_toMiddle;
 					corr_toMiddle = this.getKeepTrackSideDist(curr_toMiddle, curr_track_width);
 				}
 			}
@@ -574,13 +710,21 @@ public class DrivingController {
 		
 		ret_corr_route[0] = emer_turn_yn;
 		ret_corr_route[1] = corr_toMiddle;
+		if(tmp_c_ai_cnt > 0) {
+			ret_corr_route[2] = curr_aicars[tmp_c_ai[0]-1]; // 제일 근접한 전방 ai 차량 거리
+		}
 		
 		System.out.println("corr_toMiddle : " + corr_toMiddle);
 
 		return ret_corr_route;
 	}
 	
-	// 차량 간 Mid값으로 서로의 간격 구하기 (내차 기준)
+	/**
+	 * 차량 간 Mid값으로 서로의 간격 구하기 (내차 기준)
+	 * @param curr_toMiddle
+	 * @param curr_aiMiddle
+	 * @return
+	 */
 	private double getAiSideDist (double curr_toMiddle, double curr_aiMiddle) {
 		double ret_dist = 0.0;
 		
@@ -589,7 +733,13 @@ public class DrivingController {
 		return ret_dist;
 	}
 	
-	// Mid값으로 트랙 사이드까지 간격 구하기 (내차 기준)
+	/**
+	 * Mid값으로 트랙 사이드까지 간격 구하기 (내차 기준)
+	 * @param curr_toMiddle
+	 * @param curr_track_width
+	 * @param side
+	 * @return
+	 */
 	private double getTrackSideDist (double curr_toMiddle, double curr_track_width, int side) {
 		double ret_dist = 0.0;
 		
@@ -602,7 +752,13 @@ public class DrivingController {
 		return ret_dist;
 	}
 	
-	// 현재 진행 경로를 유지하기 위한 값
+	/**
+	 * 현재 진행 경로를 유지하기 위한 값 (내차 기준)
+	 * 0값을 셋팅하면 현재 경로가 유지되나 계산시 미세보정
+	 * @param curr_toMiddle
+	 * @param curr_track_width
+	 * @return
+	 */
 	private double getKeepTrackSideDist (double curr_toMiddle, double curr_track_width) {
 		double ret_corr_toMiddle = 0.0;
 		double tmp_r_track_side = this.getTrackSideDist(curr_toMiddle, curr_track_width, 1);
@@ -616,5 +772,109 @@ public class DrivingController {
 		
 		return ret_corr_toMiddle;
 	}
+	
+	
+	/**
+	 *  최적 속도 계산
+	 * @param curr_speed
+	 * @param curr_track_dist_straight
+	 * @param curr_track_curve_type
+	 * @return
+	 */
+	private double getBestSpeed(double curr_angle, double curr_dist_aicar, double curr_speed, double curr_track_dist_straight, double curr_track_curve_type){
+		double user_best_speed = 100;
+		
+		float user_c_coeff      = (float)2.772;
+		float user_d_coeff		= (float)-0.693;
+		
+		double curr_max_speed = 100;
+		
+		// 90 ~ 130 마일 일경우  초당 40.2~58.1m 이동 : 
+		// 70 ~  90  마일 일경우 초당 31.2~40.2m 이동 : 
+		//    ~  70  마일 일경우 초당 0   ~31.2m 이동 : 
+				
+		if(curr_track_dist_straight > 100){
+			curr_max_speed = 50;
+		}else if (curr_track_dist_straight > 80 && curr_track_dist_straight <= 100) {
+			curr_max_speed = 40;
+		}else if (curr_track_dist_straight > 50 && curr_track_dist_straight <= 80) {
+			curr_max_speed = 30;
+		}else{
+			curr_max_speed = 25; // 90도 이상일때 최적 속도(88~90km/h) 
+		}
+		
+		
+		
+		double curr_angle_abs = Math.abs(curr_angle*180/3.14);
+		
+		if(curr_angle_abs <= 10){
+			curr_max_speed = curr_max_speed*1.3;
+		}else if(curr_angle_abs > 10 && curr_angle_abs <= 30 ){
+			curr_max_speed = curr_max_speed*1;
+		}else if(curr_angle_abs > 30 && curr_angle_abs <= 45 ){
+			curr_max_speed = curr_max_speed*0.7;
+		}else if(curr_angle_abs > 45 && curr_angle_abs <= 90 ){		
+			curr_max_speed = curr_max_speed*0.6;
+		}else if(curr_angle_abs > 90 && curr_angle_abs <= 135 ){
+			curr_max_speed = curr_max_speed*0.5;
+		}else if(curr_angle_abs > 135 && curr_angle_abs <= 180 ){
+			curr_max_speed = curr_max_speed*0.2;
+		}else{
+			curr_max_speed = curr_max_speed*0.1;
+		}
+		 
+//		/*테스트 셋팅 */
+		//curr_max_speed = 25;
+//		/*테스트 셋팅 */
+		
+		user_best_speed = curr_max_speed * (1 - Math.exp(-user_c_coeff/curr_max_speed * curr_dist_aicar - user_d_coeff));
+		
+		System.out.println("+++++++++++++++++ 최적 속도 계산[start] ++++++++++++++++++++++");
+		System.out.println("curr_max_speed          ="+curr_max_speed);
+		System.out.println("user_best_speed         ="+user_best_speed);
+		System.out.println("curr_speed              ="+curr_speed + " m/s");
+		System.out.println("curr_speed              ="+curr_speed*3.6 + " km/h");
+		System.out.println("curr_angle              ="+curr_angle);
+		System.out.println("curr_angle_abs          ="+curr_angle_abs + " 도");
+		System.out.println("curr_track_dist_straight="+curr_track_dist_straight);
+		System.out.println("+++++++++++++++++ 최적 속도 계산[end] ++++++++++++++++++++++");
+		return user_best_speed;
+	}
+	
+	/**
+	 * 브레이크, 엑셀 제어 함수
+	 * @param curr_speed
+	 * @param curr_best_speed
+	 * @param curr_track_dist_straight
+	 * @return
+	 */
+	private double[] getSpeedCtl(double curr_speed, double curr_best_speed, double curr_track_dist_straight){
+		double[] user_speed_ctl = new double[2];
+		user_speed_ctl[0] = 0.2; // accel
+		user_speed_ctl[1] = 0.0; // brake
+
+		if(curr_speed > curr_best_speed) {
+			System.out.println("+++++++++++++++++ 브레이크, 엑셀 제어 함수[start] ++++++++++++++++++++++");
+			System.out.println("curr_speed               = "+curr_speed);
+			System.out.println("curr_best_speed          = "+curr_best_speed);
+			System.out.println("curr_track_dist_straight = "+curr_track_dist_straight);
+			user_speed_ctl[0] = 0.1;
+			
+			if(curr_track_dist_straight < 20){
+				user_speed_ctl[1] = 0.2;
+			}else{
+				user_speed_ctl[1] = 0.2;
+			}
+			System.out.println("user_brakeCtl="+user_speed_ctl[1]);
+			System.out.println("+++++++++++++++++ 브레이크, 엑셀 제어 함수[end] ++++++++++++++++++++++");
+			
+		}else{
+			user_speed_ctl[0] = 0.4;
+		}		
+
+		
+		return user_speed_ctl;		
+	}
+	
 			
 }
