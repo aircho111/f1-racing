@@ -534,7 +534,7 @@ public class DrivingController {
 						//if(curr_track_dist_straight == 0.0) {
 						//	corr_toMiddle = 0.0;
 						//} else {
-							corr_toMiddle = ((curr_track_width - 1.5)/2 + curr_toMiddle)/2;
+							corr_toMiddle = ((curr_track_width - 2.0)/2 + curr_toMiddle)/2;
 						//}
 					}
 					
@@ -560,7 +560,7 @@ public class DrivingController {
 						//if(curr_track_dist_straight == 0.0) {
 						//	corr_toMiddle = 0.0;
 						//} else {
-							corr_toMiddle = (-(curr_track_width - 1.5)/2 + curr_toMiddle)/2 ;
+							corr_toMiddle = (-(curr_track_width - 2.0)/2 + curr_toMiddle)/2 ;
 						//}
 					}
 				} else {
