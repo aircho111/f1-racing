@@ -6,7 +6,9 @@ public class DrivingController {
 		public int backward;
 	};
 	
-	public double track_late_angle = 0.0;  // 이전 트랙 angle 보관
+	public double track_last_angle = 0.0;  // 이전 트랙 angle 보관
+	public double curr_whole_track_dist_straight = 0.0;  // 현재 직진 트랙의 전체 트랙 길이 보관
+	public double track_last_dist_straight = 0.0;  // 이전 직진 트랙의 남은 길이 보관
 	
 	public DrivingCmd controlDriving(double[] driveArray, double[] aicarArray, double[] trackArray, double[] damageArray, int[] rankArray, int trackCurveType, double[] trackAngleArray, double[] trackDistArray, double trackCurrentAngle){
 		DrivingCmd cmd = new DrivingCmd();
@@ -49,18 +51,28 @@ public class DrivingController {
 		double track_curve_level = 0.0;
 		
 		// 직전 트랙Angle과 현재 트랙Angle과의 차이로 커브의 수준 파악을 위함.
-		track_curve_level = Math.abs(track_current_angle - track_late_angle);
+		track_curve_level = Math.abs(track_current_angle - track_last_angle);
+		if(track_last_dist_straight == 0.0 && track_dist_straight > 0.0) {
+			curr_whole_track_dist_straight = track_dist_straight;
+		} else {
+			if(track_dist_straight == 0.0) {
+				curr_whole_track_dist_straight = 0.0;
+			}
+		}
 		
 		System.out.println("===================================================");
 		System.out.println("toStart : " + toStart);
-		System.out.println("toMiddle : " + toMiddle); // 음수이면 중앙에서 오른쪽, 양수이면 왼쪽
-		System.out.println("angle : " + angle);
-		System.out.println("speed : " + speed);  // 수치가 이상하게 들어옴...
+		
 		System.out.println("track_width : " + track_width);
-		System.out.println("track_late_angle : " + track_late_angle);
+		System.out.println("track_last_angle : " + track_last_angle);
 		System.out.println("track_curr_angle : " + track_current_angle);
 		System.out.println("track_curve_level : " + track_curve_level);
+		System.out.println("speed : " + speed);  // 수치가 이상하게 들어옴...
+		System.out.println("toMiddle : " + toMiddle); // 음수이면 중앙에서 오른쪽, 양수이면 왼쪽
+		System.out.println("angle : " + angle);
 		System.out.println("track_dist_straight : " + track_dist_straight); 
+		System.out.println("track_last_dist_straight : " + track_last_dist_straight); 
+		System.out.println("curr_whole_track_dist_straight : " + curr_whole_track_dist_straight);
 		
 		System.out.println("---------------------------------------------------");
 		
@@ -75,6 +87,9 @@ public class DrivingController {
 		corr_toMiddle = corr_route[1];  // 이동할 경로 (내차 중심으로 부터 횡 간격)
 		forward_ai_dist = corr_route[2];  // 이동할 경로 (내차 중심으로 부터 횡 간격)
 		
+		/* --- 가속/감속 추가 함수 필요 : 진희책임 -- */		
+		// 차량의 break 조건 처리 등
+		
 		/* ------------ 속도 제어 함수 이관 -------------- */	
 		// 속도 제어 함수  <-- 이관함수
 		double user_best_speed  = 100;
@@ -87,139 +102,11 @@ public class DrivingController {
 		double user_breakCtl = user_speed_ctl[1];  
 		/* ------------ 속도 제어 함수 이관 -------------- */	
 		
-		/* --- 가속/감속 추가 함수 필요 : 진희책임 -- */		
-		// 차량의 break 조건 처리(임시로 전방 커브 10M 전에 차량의 속도가 110K 이상인 경우 브레이킹...커브에서는 커브경사도별로 구분함)
-
-		if(track_dist_straight > 0.0 && track_dist_straight < 15.0){
-			if( speed > 35.0) {
-				corr_break = 0.4;
-				corr_accel = 0.1;
-			} else if( speed > 30.0  && speed <= 35.0) {
-				corr_break = 0.3;
-				corr_accel = 0.1;
-			} else if ( speed > 23.0 && speed <= 30.0){
-				corr_break = 0.2;
-				corr_accel = 0.1;
-			} else if ( speed > 14 && speed <= 23.0){
-				corr_break = 0.1;
-				corr_accel = 0.1;
-			} else {
-				corr_break = 0.1;
-				corr_accel = 0.2;				
-			}
-		} else if(track_dist_straight == 0.0) {
-			if( speed > 35.0) {
-				if(track_curve_level > 0.055) {
-					corr_break = 0.5;
-					corr_accel = 0.1;
-				} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
-					corr_break = 0.4;
-					corr_accel = 0.1;
-				} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
-					corr_break = 0.3;
-					corr_accel = 0.1;
-				} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
-					corr_break = 0.2;
-					corr_accel = 0.1;
-				} else {
-					corr_break = 0.1;
-					corr_accel = 0.1;
-				}
-				
-			} else if( speed > 30.0  && speed <= 35.0) {
-				if(track_curve_level > 0.055) {
-					corr_break = 0.4;
-					corr_accel = 0.1;
-				} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
-					corr_break = 0.3;
-					corr_accel = 0.1;
-				} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
-					corr_break = 0.2;
-					corr_accel = 0.1;
-				} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
-					corr_break = 0.1;
-					corr_accel = 0.1;
-				} else {
-					corr_break = 0.1;
-					corr_accel = 0.2;
-				}
-			} else if ( speed > 23.0 && speed <= 30.0){
-				
-				if(track_curve_level > 0.055) {
-					corr_break = 0.3;
-					corr_accel = 0.1;
-				} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
-					corr_break = 0.2;
-					corr_accel = 0.1;
-				} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
-					corr_break = 0.1;
-					corr_accel = 0.1;
-				} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
-					corr_break = 0.0;
-					corr_accel = 0.1;
-				} else {
-					corr_break = 0.0;
-					corr_accel = 0.2;
-				}
-			} else if ( speed > 14 && speed <= 23.0){
-				if(track_curve_level > 0.055) {
-					corr_break = 0.2;
-					corr_accel = 0.1;
-				} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
-					corr_break = 0.1;
-					corr_accel = 0.1;
-				} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
-					corr_break = 0.0;
-					corr_accel = 0.1;
-				} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
-					corr_break = 0.0;
-					corr_accel = 0.2;
-				} else {
-					corr_break = 0.0;
-					corr_accel = 0.3;
-				}
-				
-			} else {
-				if(track_curve_level > 0.055) {
-					corr_break = 0.1;
-					corr_accel = 0.1;
-				} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
-					corr_break = 0.1;
-					corr_accel = 0.2;
-				} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
-					corr_break = 0.0;
-					corr_accel = 0.2;
-				} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
-					corr_break = 0.0;
-					corr_accel = 0.3;
-				} else {
-					corr_break = 0.0;
-					corr_accel = 0.4;
-				}
-								
-			}
-			
-		} else {
-			if( speed > 30.0) {
-				corr_break = 0.0;
-				corr_accel = 0.3;
-			} else if ( speed > 23 && speed <= 30.0){
-				corr_break = 0.0;
-				corr_accel = 0.4;
-			} else {
-				corr_break = 0.0;
-				corr_accel = 0.5;
-			}
-		}
 		
-		// 이동할 트랙의 상대위치 리턴값이 -100인경우는 장애물로 인해 이동이 불가한 경우이므로 차량 속도를 줄임
-		if(corr_toMiddle == -100.0) {
-			corr_break = 0.3;
-			//corr_accel = 0.0;
-			//corr_toMiddle = 0.0;
-			corr_toMiddle = this.getKeepTrackSideDist(toMiddle, track_width);
-		}
-		
+		// 브레이크, 엑셀 제어 <-- 자체함수(임시로 전방 커브 10M 전에 차량의 속도가 110K 이상인 경우 브레이킹...커브에서는 커브경사도별로 구분함)
+		double[] user_speed_ctl2 = this.getSpeedCtl2(speed, user_best_speed, track_dist_straight, track_curve_level);
+		double user_accelCtl2 = user_speed_ctl2[0];  
+		double user_breakCtl2 = user_speed_ctl2[1]; 
 		/*-----------------------------------------*/
 		
 		
@@ -239,7 +126,8 @@ public class DrivingController {
 		System.out.println("steer_angle : " + steer_angle);
 		System.out.println("curr damage : " + damage + "(" + damage_max + ")");
 		
-		this.track_late_angle = track_current_angle;
+		this.track_last_angle = track_current_angle;
+		this.track_last_dist_straight = track_dist_straight;
 		/*-----------------------------------------*/
 		
 		////////////////////// output values		
@@ -250,8 +138,8 @@ public class DrivingController {
 			cmd.accel = user_accelCtl; 
 			cmd.brake = user_breakCtl;
 		} else {
-			cmd.accel = corr_accel; 
-			cmd.brake = corr_break;
+			cmd.accel = user_accelCtl2; 
+			cmd.brake = user_breakCtl2;
 		}
 		cmd.backward = DrivingInterface.gear_type_forward;
 		////////////////////// END output values
@@ -616,7 +504,7 @@ public class DrivingController {
 				tmp_fst_forward_width = this.getAiSideDist(curr_toMiddle,curr_aicars[tmp_c_ai[0]]);
 				
 				
-				if ( tmp_fst_forward_width < 0.0) { // 왼쪽에 ai차량이 있을때
+				if ( tmp_fst_forward_width < 0.0) { // ai 차량 중심이 왼편에 있을때
 				    //corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
 					
 					if(curr_angle < 0.0) {
@@ -625,14 +513,20 @@ public class DrivingController {
 						corr_toMiddle = tmp_fst_forward_width + my_car_width + 1.0;
 					}
 					
-					// 직선주로에서 트랙을 벗어나는 경우 반대방향으로
-					if(curr_track_dist_straight > 0.0 && ((curr_track_width/2 + curr_toMiddle) < corr_toMiddle) ) {
-						corr_toMiddle = tmp_fst_forward_width - my_car_width - 2.0;
+					// 트랙을 벗어나는 경우 반대방향으로
+					if( ((curr_track_width-2)/2 + curr_toMiddle) < corr_toMiddle ) {
+						
+						// 직선주로에서 
+						if (curr_track_dist_straight > 0.0 ) {
+							corr_toMiddle = tmp_fst_forward_width - my_car_width - 2.0;
+						} else {
+							corr_toMiddle = (curr_track_width-2)/2 + curr_toMiddle;
+						}
 						//corr_toMiddle = curr_toMiddle;
 					}
 					
 					
-				} else {
+				} else {  // ai 차량 중심이 오른편에 있을때
 
 					
 					if(curr_angle > 0.0) {
@@ -642,8 +536,15 @@ public class DrivingController {
 					}
 
 					// 직선주로에서 트랙을 벗어나는 경우 반대으로
-					if(curr_track_dist_straight > 0.0 && ((-curr_track_width/2 + curr_toMiddle) > corr_toMiddle) ) {
-						corr_toMiddle = tmp_fst_forward_width + my_car_width + 2.0;
+					if((-(curr_track_width-2)/2 + curr_toMiddle) > corr_toMiddle ) {
+						
+						// 직선주로에서 
+						if (curr_track_dist_straight > 0.0 ) {
+							corr_toMiddle = tmp_fst_forward_width + my_car_width + 2.0;
+						} else {
+							corr_toMiddle = -(curr_track_width-2)/2 + curr_toMiddle;
+						}
+	
 						//corr_toMiddle = curr_toMiddle;
 					}
 
@@ -655,13 +556,14 @@ public class DrivingController {
 				System.out.println("No ai car forward. Go Go!!!");
 				System.out.println("track_curve_type : " + curr_track_curve_type);
 				System.out.println("track_dist_straight : " + curr_track_dist_straight);
+				System.out.println("track_whole_dist : " + curr_whole_track_dist_straight);
 				
 				// 우회전 코스
 				if(curr_track_curve_type == 1.0) {
 					System.out.println("Right Curve " + curr_track_dist_straight + " forward.");
 					
 					//전방 10M 전까지는 좌측으로 주행
-					if(curr_track_dist_straight > 15.0) {
+					if(curr_track_dist_straight > 15.0 && curr_whole_track_dist_straight > 50.0) {
 						// 현재 내 차의 위치가 중앙선 좌측에 있는 경우만 좌측으로 우측에 있는 경우는 중앙선으로
 						if(curr_toMiddle > 0) {
 							corr_toMiddle = (-(curr_track_width-3)/2 + curr_toMiddle)/5;
@@ -675,14 +577,18 @@ public class DrivingController {
 							corr_toMiddle = curr_toMiddle/5;
 						}
 					} else {
-						corr_toMiddle = ((curr_track_width - 2.0)/2 + curr_toMiddle)/2;
+						if (curr_track_dist_straight > 2.0) {
+							corr_toMiddle = ((curr_track_width - 2.0)/2 + curr_toMiddle)/curr_track_dist_straight;
+						} else {
+							corr_toMiddle = ((curr_track_width - 2.0)/2 + curr_toMiddle)/2;
+						}
 					}
 					
 				} else if(curr_track_curve_type == 2.0){
 					System.out.println("Left Curve " + curr_track_dist_straight + " forward.");
 					
 					//전방 10M 전까지는 우측으로 주행
-					if(curr_track_dist_straight > 15.0) {
+					if(curr_track_dist_straight > 15.0  && curr_whole_track_dist_straight > 50.0) {
 						
 						// 현재 내 차의 위치가 중앙선 우측에 있는 경우만 우측으로 좌측에 있는 경우는 중앙선으로
 						if(curr_toMiddle < 0) {
@@ -698,7 +604,11 @@ public class DrivingController {
 						}
 						
 					} else {
-						corr_toMiddle = (-(curr_track_width - 2.0)/2 + curr_toMiddle)/2 ;
+						if (curr_track_dist_straight > 2.0) {
+							corr_toMiddle = (-(curr_track_width - 2.0)/2 + curr_toMiddle)/curr_track_dist_straight ;
+						} else {
+							corr_toMiddle = (-(curr_track_width - 2.0)/2 + curr_toMiddle)/2;
+						}
 					}
 				} else {
 				
@@ -767,7 +677,14 @@ public class DrivingController {
 		//전방에 장애물 차량이 없는 경우는 그냥 가던 길로
 		
 		if(tmp_r_track_side < 0.0 || tmp_l_track_side > 0.0) {
-			ret_corr_toMiddle = tmp_r_track_side;
+			if(tmp_r_track_side < 0.0) {
+				ret_corr_toMiddle = tmp_r_track_side - 1;
+			}
+			
+			if(tmp_l_track_side > 0.0) {
+				ret_corr_toMiddle = tmp_l_track_side + 1;
+			}
+			
 		} 
 		
 		return ret_corr_toMiddle;
@@ -871,6 +788,177 @@ public class DrivingController {
 		}else{
 			user_speed_ctl[0] = 0.4;
 		}		
+
+		
+		return user_speed_ctl;		
+	}
+	
+	/**
+	 * 브레이크, 엑셀 제어 함수(자체)
+	 * @param curr_speed
+	 * @param curr_best_speed
+	 * @param curr_track_dist_straight
+	 * @return
+	 */
+	private double[] getSpeedCtl2(double curr_speed, double curr_best_speed, double curr_track_dist_straight, double track_curve_level){
+		double corr_break = 0.0;
+		double corr_accel = 0.2;
+		double[] user_speed_ctl = new double[2];
+		user_speed_ctl[0] = 0.2; // accel
+		user_speed_ctl[1] = 0.0; // brake
+
+		//if(curr_speed > curr_best_speed) {
+			System.out.println("+++++++++++++++++ 브레이크, 엑셀 제어 함수2[start] ++++++++++++++++++++++");
+			System.out.println("curr_speed               = "+curr_speed);
+			System.out.println("curr_best_speed          = "+curr_best_speed);
+			System.out.println("curr_track_dist_straight = "+curr_track_dist_straight);
+			
+			if(curr_track_dist_straight > 0.0 && curr_track_dist_straight < 15.0){
+				if( curr_speed > 35.0) {
+					corr_break = 0.4;
+					corr_accel = 0.1;
+				} else if( curr_speed > 30.0  && curr_speed <= 35.0) {
+					corr_break = 0.3;
+					corr_accel = 0.1;
+				} else if ( curr_speed > 23.0 && curr_speed <= 30.0){
+					corr_break = 0.2;
+					corr_accel = 0.1;
+				} else if ( curr_speed > 14.0 && curr_speed <= 23.0){
+					corr_break = 0.1;
+					corr_accel = 0.1;
+				} else {
+					corr_break = 0.1;
+					corr_accel = 0.2;				
+				}
+			} else if(curr_track_dist_straight == 0.0) {
+				if( curr_speed > 35.0) {
+					if(track_curve_level > 0.055) {
+						corr_break = 0.5;
+						corr_accel = 0.1;
+					} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
+						corr_break = 0.4;
+						corr_accel = 0.1;
+					} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
+						corr_break = 0.3;
+						corr_accel = 0.1;
+					} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
+						corr_break = 0.2;
+						corr_accel = 0.1;
+					} else {
+						corr_break = 0.1;
+						corr_accel = 0.1;
+					}
+					
+				} else if( curr_speed > 30.0  && curr_speed <= 35.0) {
+					if(track_curve_level > 0.055) {
+						corr_break = 0.4;
+						corr_accel = 0.1;
+					} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
+						corr_break = 0.3;
+						corr_accel = 0.1;
+					} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
+						corr_break = 0.2;
+						corr_accel = 0.1;
+					} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
+						corr_break = 0.1;
+						corr_accel = 0.1;
+					} else {
+						corr_break = 0.1;
+						corr_accel = 0.2;
+					}
+				} else if ( curr_speed > 23.0 && curr_speed <= 30.0){
+					
+					if(track_curve_level > 0.055) {
+						corr_break = 0.3;
+						corr_accel = 0.1;
+					} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
+						corr_break = 0.2;
+						corr_accel = 0.1;
+					} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
+						corr_break = 0.1;
+						corr_accel = 0.1;
+					} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
+						corr_break = 0.0;
+						corr_accel = 0.1;
+					} else {
+						corr_break = 0.0;
+						corr_accel = 0.2;
+					}
+				} else if ( curr_speed > 14 && curr_speed <= 23.0){
+					if(track_curve_level > 0.055) {
+						corr_break = 0.2;
+						corr_accel = 0.1;
+					} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
+						corr_break = 0.1;
+						corr_accel = 0.1;
+					} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
+						corr_break = 0.0;
+						corr_accel = 0.1;
+					} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
+						corr_break = 0.0;
+						corr_accel = 0.2;
+					} else {
+						corr_break = 0.0;
+						corr_accel = 0.3;
+					}
+					
+				} else {
+					if(track_curve_level > 0.055) {
+						corr_break = 0.1;
+						corr_accel = 0.1;
+					} else if(track_curve_level > 0.045 && track_curve_level <= 0.055) {
+						corr_break = 0.1;
+						corr_accel = 0.2;
+					} else if (track_curve_level > 0.035 && track_curve_level <= 0.045) {
+						corr_break = 0.0;
+						corr_accel = 0.2;
+					} else if (track_curve_level > 0.030 && track_curve_level <= 0.035) {
+						corr_break = 0.0;
+						corr_accel = 0.3;
+					} else {
+						corr_break = 0.0;
+						corr_accel = 0.4;
+					}
+									
+				}
+				
+			} else {
+				if( curr_speed > 35.0) {
+					if(curr_track_dist_straight > 100) {
+						corr_break = 0.0;
+						corr_accel = 0.4;
+					} else {
+						corr_break = 0.0;
+						corr_accel = 0.3;
+					}
+				} else if ( curr_speed > 23 && curr_speed <= 35.0){
+					if(curr_track_dist_straight > 100) {
+						corr_break = 0.0;
+						corr_accel = 0.5;
+					} else {
+						corr_break = 0.0;
+						corr_accel = 0.4;
+					}
+				} else {
+					if(curr_track_dist_straight > 100) {
+						corr_break = 0.0;
+						corr_accel = 0.6;
+					} else {
+						corr_break = 0.0;
+						corr_accel = 0.5;
+					}
+				}
+			}
+			
+			user_speed_ctl[0] = corr_accel;
+			user_speed_ctl[1] = corr_break;
+			System.out.println("user_accelCtl="+user_speed_ctl[0]);
+			System.out.println("user_brakeCtl="+user_speed_ctl[1]);
+			System.out.println("+++++++++++++++++ 브레이크, 엑셀 제어 함수2[end] ++++++++++++++++++++++");
+			
+		//}else{
+		//	user_speed_ctl[0] = 0.4;
+		//}		
 
 		
 		return user_speed_ctl;		
