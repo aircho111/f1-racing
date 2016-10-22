@@ -8,7 +8,8 @@ public class DrivingController {
 	
 	public double track_last_angle = 0.0;  // 이전 트랙 angle 보관
 	public double curr_whole_track_dist_straight = 0.0;  // 현재 직진 트랙의 전체 트랙 길이 보관
-	public double track_last_dist_straight = 0.0;  // 이전 직진 트랙의 남은 길이 보관
+	public double track_last_dist_straight = 0.0;  // 이전 직진 트랙의 남은 길이 보관	
+	public boolean isLogger = false;  // 테스트 로그용 출력
 	
 	public DrivingCmd controlDriving(double[] driveArray, double[] aicarArray, double[] trackArray, double[] damageArray, int[] rankArray, int trackCurveType, double[] trackAngleArray, double[] trackDistArray, double trackCurrentAngle){
 		DrivingCmd cmd = new DrivingCmd();
@@ -39,6 +40,7 @@ public class DrivingController {
 		////////////////////// END input parameters
 		
 		// To-Do : Make your driving algorithm
+		System.out.println("====================== [start] =============================");
 		
 		double steer_angle = 0.0;
 		double streer_coeff = 0.3;
@@ -60,21 +62,31 @@ public class DrivingController {
 			}
 		}
 		
-		System.out.println("===================================================");
-		System.out.println("toStart : " + toStart);
+		// 변경할 angle 계산
+		double user_chagne_angle = angle;
 		
-		System.out.println("track_width : " + track_width);
-		System.out.println("track_last_angle : " + track_last_angle);
-		System.out.println("track_curr_angle : " + track_current_angle);
-		System.out.println("track_curve_level : " + track_curve_level);
-		System.out.println("speed : " + speed);  // 수치가 이상하게 들어옴...
-		System.out.println("toMiddle : " + toMiddle); // 음수이면 중앙에서 오른쪽, 양수이면 왼쪽
-		System.out.println("angle : " + angle);
-		System.out.println("track_dist_straight : " + track_dist_straight); 
-		System.out.println("track_last_dist_straight : " + track_last_dist_straight); 
-		System.out.println("curr_whole_track_dist_straight : " + curr_whole_track_dist_straight);
+		double[] forward_track_info = new double[2];
+		forward_track_info = this.getForwardTrackInfo(speed, track_forward_angles, track_forward_dists, track_current_angle, toStart, angle, track_dist_straight, track_curve_type);		
+		user_chagne_angle  = forward_track_info[0];
 		
-		System.out.println("---------------------------------------------------");
+		if(isLogger) {			
+			System.out.println("toStart : " + toStart);			
+			System.out.println("track_width : " + track_width);
+			System.out.println("track_last_angle : " + track_last_angle);
+			System.out.println("track_curr_angle : " + track_current_angle);
+			System.out.println("track_curve_level : " + track_curve_level);
+			System.out.println("speed : " + speed);  // 수치가 이상하게 들어옴...
+			System.out.println("toMiddle : " + toMiddle); // 음수이면 중앙에서 오른쪽, 양수이면 왼쪽
+			System.out.println("angle : " + angle);
+			System.out.println("user_chagne_angle : " + user_chagne_angle);
+			System.out.println("track_dist_straight : " + track_dist_straight); 
+			System.out.println("track_last_dist_straight : " + track_last_dist_straight); 
+			System.out.println("curr_whole_track_dist_straight : " + curr_whole_track_dist_straight);
+			
+			System.out.println("---------------------------------------------------");
+		}
+		
+		angle = user_chagne_angle;
 		
 		// 차량이 이동할 트랙의 상대위치 (+값은 오른쪽, -값은 왼쪽), 장애물로 인해 이동이 불가한 경우 -100 리턴
 		//corr_toMiddle = this.getCorrToMiddle(dist_cars, toMiddle, speed, angle, track_width, track_dist_straight, track_curve_type);
@@ -118,14 +130,15 @@ public class DrivingController {
 			streer_coeff = 1.0;
 		}
 		
-		System.out.println("emergency turn yn : " + emer_turn_yn);
-		
+		if(isLogger) {
+			System.out.println("emergency turn yn : " + emer_turn_yn);
+		}
 		// 차량이 회전할 angle값 계산
 		steer_angle = this.getSteerAngle(angle, corr_toMiddle, track_width, streer_coeff);
-		
-		System.out.println("steer_angle : " + steer_angle);
-		System.out.println("curr damage : " + damage + "(" + damage_max + ")");
-		
+		if(isLogger) {
+			System.out.println("steer_angle : " + steer_angle);
+			System.out.println("curr damage : " + damage + "(" + damage_max + ")");
+		}
 		this.track_last_angle = track_current_angle;
 		this.track_last_dist_straight = track_dist_straight;
 		/*-----------------------------------------*/
@@ -143,7 +156,7 @@ public class DrivingController {
 		}
 		cmd.backward = DrivingInterface.gear_type_forward;
 		////////////////////// END output values
-		
+		System.out.println("====================== [end] =============================");
 		return cmd;
 	}
 	
@@ -186,6 +199,66 @@ public class DrivingController {
 		}
 	}
 	
+	
+
+	/**
+	 * 전방 트랙정보 이용 함수 
+	 * @param curr_track_forward_angles
+	 * @param curr_track_forward_dists
+	 * @param curr_track_current_angle
+	 * @param curr_toStart
+	 * @param curr_angle
+	 * @param curr_track_dist_straight
+	 * @param curr_track_curve_type
+	 * @return
+	 */
+	private double[] getForwardTrackInfo(double curr_speed, double[] curr_track_forward_angles, double[] curr_track_forward_dists, double curr_track_current_angle, double curr_toStart, double curr_angle, double curr_track_dist_straight, double curr_track_curve_type){
+		double[] forward_track_info = new double[2];
+		forward_track_info[0] =  curr_angle; // 변경할 전방 angle 정보
+		forward_track_info[1] =  0; // 추가 사용 예정
+
+		double user_forward_dists = 0;
+		
+		double track_chage_angle  = 0;
+		double user_chagne_angle  = 0;
+		long start_time = System.nanoTime();
+		for(int i=0;i<20;i++){
+			/* 상대거리 계산 */
+			user_forward_dists = curr_track_forward_dists[i] - curr_toStart;
+			System.out.println("curr_speed["+i+"]   = " + curr_speed);
+			
+			System.out.println("track_forward_dists["+i+"]   = " + user_forward_dists);
+//			System.out.println("track_current_angle     = " + track_current_angle*180/3.14);
+//			System.out.println("track_forward_angles["+i+"] = " + track_forward_angles[i]);
+//			System.out.println("track_forward_angles["+i+"]  = " + track_forward_angles[i]*180/3.14); 
+			
+			
+			track_chage_angle = curr_track_current_angle - curr_track_forward_angles[i];			
+				
+			System.out.println("track_chage_angle["+i+"]      = " + ( track_chage_angle*180/3.14 ));
+			System.out.println("track_chage_angle 파이["+i+"]   = " + track_chage_angle);
+			System.out.println("track_current_angle 파이["+i+"]  = " + ( curr_track_current_angle ));
+			System.out.println("track_forward_angles 파이["+i+"] = " + curr_track_forward_angles[i]); 
+			
+			if(i == 0 && user_forward_dists < 3) // 전방 1m 이내인 경우(트랙이 다수 변경되는 점)
+			{
+				user_chagne_angle = curr_angle + track_chage_angle;
+				forward_track_info[0] = user_chagne_angle;
+				System.out.println("user_chagne_angle 파이["+i+"]    = " + user_chagne_angle);				
+				System.out.println();
+				
+			}else{
+				forward_track_info[0] = curr_angle;
+			}
+			long end_time = System.nanoTime();
+			System.out.println("user_chagne_angle time " + (end_time-start_time));
+			
+			break; // 현재 angle 정보만 처리하기때문에 한번만 읽음
+		}
+		
+		
+		return forward_track_info;		
+	}
 	
 	/**
 	 * 핸들 Angle 산출
@@ -379,7 +452,9 @@ public class DrivingController {
 		/*================ 경로 결정 ====================*/
 		// ai 차량이 왼쪽에 있고 오른쪽에 없는 경우
 		if(tmp_r_ai_cnt == 0 && tmp_l_ai_cnt > 0) {
-			System.out.println("Left ai car : " + tmp_l_ai_cnt + "," + tmp_c_ai_cnt);
+			if(isLogger) {
+				System.out.println("Left ai car : " + tmp_l_ai_cnt + "," + tmp_c_ai_cnt);
+			}
 			
 			// 전방에 ai 차량이 있는 경우 오른방향으로
 			//if(tmp_c_ai_cnt > 0  || curr_aicars[tmp_l_ai[0]] < 3.0) {
@@ -400,7 +475,9 @@ public class DrivingController {
 		
 	    // ai 차량이 오른쪽에 있고 왼쪽에 없는 경우
 		} else if (tmp_r_ai_cnt > 0 && tmp_l_ai_cnt == 0) {
-			System.out.println("Right ai car : " + tmp_r_ai_cnt + "," + tmp_c_ai_cnt);
+			if(isLogger) {
+				System.out.println("Right ai car : " + tmp_r_ai_cnt + "," + tmp_c_ai_cnt);
+			}
 			
 			// 바로 앞에 ai 차량이 있는 경우 왼쪽방향으로
 			//if(tmp_c_ai_cnt > 0 || curr_aicars[tmp_r_ai[0]] > -3.0) {
@@ -422,8 +499,9 @@ public class DrivingController {
 		
 		// 양쪽 모두 차량이 있는 경우
 		} else if (tmp_r_ai_cnt > 0 && tmp_l_ai_cnt > 0) {
-			
-			System.out.println("Left and Right ai car : " + tmp_l_ai_cnt + "," + tmp_r_ai_cnt + "," + tmp_c_ai_cnt);
+			if(isLogger) {
+				System.out.println("Left and Right ai car : " + tmp_l_ai_cnt + "," + tmp_r_ai_cnt + "," + tmp_c_ai_cnt);
+			}
 			
 			double tmp_left_width = 0.0;
 			double tmp_right_width = 0.0;
@@ -499,7 +577,9 @@ public class DrivingController {
 			
 			// 전방에 ai차량이 있는 경우
 			if(tmp_c_ai_cnt > 0) {
-				System.out.println("Forward ai car : " + tmp_c_ai_cnt);
+				if(isLogger) {
+					System.out.println("Forward ai car : " + tmp_c_ai_cnt);
+				}
 				
 				tmp_fst_forward_width = this.getAiSideDist(curr_toMiddle,curr_aicars[tmp_c_ai[0]]);
 				
@@ -553,14 +633,18 @@ public class DrivingController {
 				emer_turn_yn = 1.0;
 
 			} else {
-				System.out.println("No ai car forward. Go Go!!!");
-				System.out.println("track_curve_type : " + curr_track_curve_type);
-				System.out.println("track_dist_straight : " + curr_track_dist_straight);
-				System.out.println("track_whole_dist : " + curr_whole_track_dist_straight);
+				if(isLogger) {
+					System.out.println("No ai car forward. Go Go!!!");
+					System.out.println("track_curve_type : " + curr_track_curve_type);
+					System.out.println("track_dist_straight : " + curr_track_dist_straight);
+					System.out.println("track_whole_dist : " + curr_whole_track_dist_straight);
+				}
 				
 				// 우회전 코스
 				if(curr_track_curve_type == 1.0) {
-					System.out.println("Right Curve " + curr_track_dist_straight + " forward.");
+					if(isLogger) {
+						System.out.println("Right Curve " + curr_track_dist_straight + " forward.");
+					}
 					
 					//전방 10M 전까지는 좌측으로 주행
 					if(curr_track_dist_straight > 15.0 && curr_whole_track_dist_straight > 50.0) {
@@ -585,7 +669,9 @@ public class DrivingController {
 					}
 					
 				} else if(curr_track_curve_type == 2.0){
-					System.out.println("Left Curve " + curr_track_dist_straight + " forward.");
+					if(isLogger) {
+						System.out.println("Left Curve " + curr_track_dist_straight + " forward.");
+					}
 					
 					//전방 10M 전까지는 우측으로 주행
 					if(curr_track_dist_straight > 15.0  && curr_whole_track_dist_straight > 50.0) {
@@ -623,8 +709,9 @@ public class DrivingController {
 		if(tmp_c_ai_cnt > 0) {
 			ret_corr_route[2] = curr_aicars[tmp_c_ai[0]-1]; // 제일 근접한 전방 ai 차량 거리
 		}
-		
-		System.out.println("corr_toMiddle : " + corr_toMiddle);
+		if(isLogger) {
+			System.out.println("corr_toMiddle : " + corr_toMiddle);
+		}
 
 		return ret_corr_route;
 	}
@@ -745,16 +832,17 @@ public class DrivingController {
 //		/*테스트 셋팅 */
 		
 		user_best_speed = curr_max_speed * (1 - Math.exp(-user_c_coeff/curr_max_speed * curr_dist_aicar - user_d_coeff));
-		
-		System.out.println("+++++++++++++++++ 최적 속도 계산[start] ++++++++++++++++++++++");
-		System.out.println("curr_max_speed          ="+curr_max_speed);
-		System.out.println("user_best_speed         ="+user_best_speed);
-		System.out.println("curr_speed              ="+curr_speed + " m/s");
-		System.out.println("curr_speed              ="+curr_speed*3.6 + " km/h");
-		System.out.println("curr_angle              ="+curr_angle);
-		System.out.println("curr_angle_abs          ="+curr_angle_abs + " 도");
-		System.out.println("curr_track_dist_straight="+curr_track_dist_straight);
-		System.out.println("+++++++++++++++++ 최적 속도 계산[end] ++++++++++++++++++++++");
+		if(isLogger) {
+			System.out.println("+++++++++++++++++ 최적 속도 계산[start] ++++++++++++++++++++++");
+			System.out.println("curr_max_speed          ="+curr_max_speed);
+			System.out.println("user_best_speed         ="+user_best_speed);
+			System.out.println("curr_speed              ="+curr_speed + " m/s");
+			System.out.println("curr_speed              ="+curr_speed*3.6 + " km/h");
+			System.out.println("curr_angle              ="+curr_angle);
+			System.out.println("curr_angle_abs          ="+curr_angle_abs + " 도");
+			System.out.println("curr_track_dist_straight="+curr_track_dist_straight);
+			System.out.println("+++++++++++++++++ 최적 속도 계산[end] ++++++++++++++++++++++");
+		}
 		return user_best_speed;
 	}
 	
@@ -771,10 +859,12 @@ public class DrivingController {
 		user_speed_ctl[1] = 0.0; // brake
 
 		if(curr_speed > curr_best_speed) {
-			System.out.println("+++++++++++++++++ 브레이크, 엑셀 제어 함수[start] ++++++++++++++++++++++");
-			System.out.println("curr_speed               = "+curr_speed);
-			System.out.println("curr_best_speed          = "+curr_best_speed);
-			System.out.println("curr_track_dist_straight = "+curr_track_dist_straight);
+			if(isLogger) {
+				System.out.println("+++++++++++++++++ 브레이크, 엑셀 제어 함수[start] ++++++++++++++++++++++");
+				System.out.println("curr_speed               = "+curr_speed);
+				System.out.println("curr_best_speed          = "+curr_best_speed);
+				System.out.println("curr_track_dist_straight = "+curr_track_dist_straight);
+			}
 			user_speed_ctl[0] = 0.1;
 			
 			if(curr_track_dist_straight < 20){
@@ -782,8 +872,10 @@ public class DrivingController {
 			}else{
 				user_speed_ctl[1] = 0.2;
 			}
-			System.out.println("user_brakeCtl="+user_speed_ctl[1]);
-			System.out.println("+++++++++++++++++ 브레이크, 엑셀 제어 함수[end] ++++++++++++++++++++++");
+			if(isLogger) {
+				System.out.println("user_brakeCtl="+user_speed_ctl[1]);
+				System.out.println("+++++++++++++++++ 브레이크, 엑셀 제어 함수[end] ++++++++++++++++++++++");
+			}
 			
 		}else{
 			user_speed_ctl[0] = 0.4;
@@ -808,10 +900,12 @@ public class DrivingController {
 		user_speed_ctl[1] = 0.0; // brake
 
 		//if(curr_speed > curr_best_speed) {
-			System.out.println("+++++++++++++++++ 브레이크, 엑셀 제어 함수2[start] ++++++++++++++++++++++");
-			System.out.println("curr_speed               = "+curr_speed);
-			System.out.println("curr_best_speed          = "+curr_best_speed);
-			System.out.println("curr_track_dist_straight = "+curr_track_dist_straight);
+			if(isLogger) {
+				System.out.println("+++++++++++++++++ 브레이크, 엑셀 제어 함수2[start] ++++++++++++++++++++++");
+				System.out.println("curr_speed               = "+curr_speed);
+				System.out.println("curr_best_speed          = "+curr_best_speed);
+				System.out.println("curr_track_dist_straight = "+curr_track_dist_straight);
+			}
 			
 			if(curr_track_dist_straight > 0.0 && curr_track_dist_straight < 15.0){
 				if( curr_speed > 35.0) {
@@ -952,9 +1046,11 @@ public class DrivingController {
 			
 			user_speed_ctl[0] = corr_accel;
 			user_speed_ctl[1] = corr_break;
-			System.out.println("user_accelCtl="+user_speed_ctl[0]);
-			System.out.println("user_brakeCtl="+user_speed_ctl[1]);
-			System.out.println("+++++++++++++++++ 브레이크, 엑셀 제어 함수2[end] ++++++++++++++++++++++");
+			if(isLogger) {
+				System.out.println("user_accelCtl="+user_speed_ctl[0]);
+				System.out.println("user_brakeCtl="+user_speed_ctl[1]);
+				System.out.println("+++++++++++++++++ 브레이크, 엑셀 제어 함수2[end] ++++++++++++++++++++++");
+			}
 			
 		//}else{
 		//	user_speed_ctl[0] = 0.4;
