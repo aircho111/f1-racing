@@ -6,10 +6,10 @@ public class DrivingController {
 		public int backward;
 	};
 	
-	public double track_last_angle = 0.0;  // ì´ì „ íŠ¸ë™ angle ë³´ê´€
-	public double curr_whole_track_dist_straight = 0.0;  // í˜„ì¬ ì§ì§„ íŠ¸ë™ì˜ ì „ì²´ íŠ¸ë™ ê¸¸ì´ ë³´ê´€
-	public double track_last_dist_straight = 0.0;  // ì´ì „ ì§ì§„ íŠ¸ë™ì˜ ë‚¨ì€ ê¸¸ì´ ë³´ê´€	
-	public boolean isLogger = false;  // í…ŒìŠ¤íŠ¸ ë¡œê·¸ìš© ì¶œë ¥
+	public double track_last_angle = 0.0;  // ÀÌÀü Æ®·¢ angle º¸°ü
+	public double curr_whole_track_dist_straight = 0.0;  // ÇöÀç Á÷Áø Æ®·¢ÀÇ ÀüÃ¼ Æ®·¢ ±æÀÌ º¸°ü
+	public double track_last_dist_straight = 0.0;  // ÀÌÀü Á÷Áø Æ®·¢ÀÇ ³²Àº ±æÀÌ º¸°ü	
+	public boolean isLogger = true;  // Å×½ºÆ® ·Î±×¿ë Ãâ·Â
 	
 	public DrivingCmd controlDriving(double[] driveArray, double[] aicarArray, double[] trackArray, double[] damageArray, int[] rankArray, int trackCurveType, double[] trackAngleArray, double[] trackDistArray, double trackCurrentAngle){
 		DrivingCmd cmd = new DrivingCmd();
@@ -52,7 +52,9 @@ public class DrivingController {
 		double corr_accel = 0.25;
 		double track_curve_level = 0.0;
 		
-		// ì§ì „ íŠ¸ë™Angleê³¼ í˜„ì¬ íŠ¸ë™Angleê³¼ì˜ ì°¨ì´ë¡œ ì»¤ë¸Œì˜ ìˆ˜ì¤€ íŒŒì•…ì„ ìœ„í•¨.
+		double[] user_change_dist = new double[2];
+		
+		// Á÷Àü Æ®·¢Angle°ú ÇöÀç Æ®·¢Angle°úÀÇ Â÷ÀÌ·Î Ä¿ºêÀÇ ¼öÁØ ÆÄ¾ÇÀ» À§ÇÔ.
 		track_curve_level = Math.abs(track_current_angle - track_last_angle);
 		if(track_last_dist_straight == 0.0 && track_dist_straight > 0.0) {
 			curr_whole_track_dist_straight = track_dist_straight;
@@ -62,7 +64,7 @@ public class DrivingController {
 			}
 		}
 		
-		// ë³€ê²½í•  angle ê³„ì‚°
+		// º¯°æÇÒ angle °è»ê
 		double user_chagne_angle = angle;
 		
 		double[] forward_track_info = new double[2];
@@ -75,8 +77,8 @@ public class DrivingController {
 			System.out.println("track_last_angle : " + track_last_angle);
 			System.out.println("track_curr_angle : " + track_current_angle);
 			System.out.println("track_curve_level : " + track_curve_level);
-			System.out.println("speed : " + speed);  // ìˆ˜ì¹˜ê°€ ì´ìƒí•˜ê²Œ ë“¤ì–´ì˜´...
-			System.out.println("toMiddle : " + toMiddle); // ìŒìˆ˜ì´ë©´ ì¤‘ì•™ì—ì„œ ì˜¤ë¥¸ìª½, ì–‘ìˆ˜ì´ë©´ ì™¼ìª½
+			System.out.println("speed : " + speed);  // ¼öÄ¡°¡ ÀÌ»óÇÏ°Ô µé¾î¿È...
+			System.out.println("toMiddle : " + toMiddle); // À½¼öÀÌ¸é Áß¾Ó¿¡¼­ ¿À¸¥ÂÊ, ¾ç¼öÀÌ¸é ¿ŞÂÊ
 			System.out.println("angle : " + angle);
 			System.out.println("user_chagne_angle : " + user_chagne_angle);
 			System.out.println("track_dist_straight : " + track_dist_straight); 
@@ -88,70 +90,119 @@ public class DrivingController {
 		
 		angle = user_chagne_angle;
 		
-		// ì°¨ëŸ‰ì´ ì´ë™í•  íŠ¸ë™ì˜ ìƒëŒ€ìœ„ì¹˜ (+ê°’ì€ ì˜¤ë¥¸ìª½, -ê°’ì€ ì™¼ìª½), ì¥ì• ë¬¼ë¡œ ì¸í•´ ì´ë™ì´ ë¶ˆê°€í•œ ê²½ìš° -100 ë¦¬í„´
+		// Â÷·®ÀÌ ÀÌµ¿ÇÒ Æ®·¢ÀÇ »ó´ëÀ§Ä¡ (+°ªÀº ¿À¸¥ÂÊ, -°ªÀº ¿ŞÂÊ), Àå¾Ö¹°·Î ÀÎÇØ ÀÌµ¿ÀÌ ºÒ°¡ÇÑ °æ¿ì -100 ¸®ÅÏ
 		//corr_toMiddle = this.getCorrToMiddle(dist_cars, toMiddle, speed, angle, track_width, track_dist_straight, track_curve_type);
 		corr_route[0] = -1.0;
 		corr_route[1] = 0.0;
 		corr_route[2] = 100.0;
 		corr_route = this.getCorrToMiddle(dist_cars, toMiddle, speed, angle, track_width, track_dist_straight, track_curve_type);
 		
-		emer_turn_yn = corr_route[0];   // ì¥ì• ë¬¼ í”¼í•˜ê¸° ìœ„í•œ ê²½ë¡œ ì¡°ì •ì¸ ê²½ìš° 0ë³´ë‹¤ í°ê°’
-		corr_toMiddle = corr_route[1];  // ì´ë™í•  ê²½ë¡œ (ë‚´ì°¨ ì¤‘ì‹¬ìœ¼ë¡œ ë¶€í„° íš¡ ê°„ê²©)
-		forward_ai_dist = corr_route[2];  // ì´ë™í•  ê²½ë¡œ (ë‚´ì°¨ ì¤‘ì‹¬ìœ¼ë¡œ ë¶€í„° íš¡ ê°„ê²©)
+		emer_turn_yn = corr_route[0];   // Àå¾Ö¹° ÇÇÇÏ±â À§ÇÑ °æ·Î Á¶Á¤ÀÎ °æ¿ì 0º¸´Ù Å«°ª
+		corr_toMiddle = corr_route[1];  // ÀÌµ¿ÇÒ °æ·Î (³»Â÷ Áß½ÉÀ¸·Î ºÎÅÍ È¾ °£°İ)
+		forward_ai_dist = corr_route[2];  // ÀÌµ¿ÇÒ °æ·Î (³»Â÷ Áß½ÉÀ¸·Î ºÎÅÍ È¾ °£°İ)
+		
+		if(emer_turn_yn > 1.0) {
+			user_change_dist[0] = this.getBestDist(toMiddle, track_width, track_curve_type);
+			user_change_dist = this.getChangeDist(dist_cars, toMiddle, user_change_dist[0], speed, track_width, track_dist_straight, track_curve_type);
+		
+			corr_toMiddle = user_change_dist[0];
+			forward_ai_dist = user_change_dist[1];
+		}
 		
 		double user_best_speed  = 100;
-		/* --- ê°€ì†/ê°ì† ì¶”ê°€ í•¨ìˆ˜ í•„ìš” : ì§„í¬ì±…ì„ -- */		
-		// ì°¨ëŸ‰ì˜ break ì¡°ê±´ ì²˜ë¦¬ ë“±
+		
+		/* ------------ ¼Óµµ Á¦¾î ÇÔ¼ö ÀÌ°ü -------------- */	
+		// ¼Óµµ Á¦¾î ÇÔ¼ö  <-- ÀÌ°üÇÔ¼ö
+		
+		user_best_speed = this.getBestSpeed(angle, forward_ai_dist, speed, track_dist_straight, track_curve_type);
+		
+		// ºê·¹ÀÌÅ©, ¿¢¼¿ Á¦¾î <-- ÀÌ°üÇÔ¼ö
+		double[] user_speed_ctl = this.getSpeedCtl(speed, user_best_speed, track_dist_straight);
+		
+		double user_accelCtl = user_speed_ctl[0];  
+		double user_breakCtl = user_speed_ctl[1];  
+		/* ------------ ¼Óµµ Á¦¾î ÇÔ¼ö ÀÌ°ü -------------- */	
+		
+		
+		// ºê·¹ÀÌÅ©, ¿¢¼¿ Á¦¾î <-- ÀÚÃ¼ÇÔ¼ö(ÀÓ½Ã·Î Àü¹æ Ä¿ºê 10M Àü¿¡ Â÷·®ÀÇ ¼Óµµ°¡ 110K ÀÌ»óÀÎ °æ¿ì ºê·¹ÀÌÅ·...Ä¿ºê¿¡¼­´Â Ä¿ºê°æ»çµµº°·Î ±¸ºĞÇÔ)
+		double[] user_speed_ctl2 = this.getSpeedCtl2(speed, user_best_speed, track_dist_straight, track_curve_level);
+		double user_accelCtl2 = user_speed_ctl2[0];  
+		double user_breakCtl2 = user_speed_ctl2[1]; 
+		/*-----------------------------------------*/
+		
+		// Àü¹æ Àå¾Ö¹°ÀÌ ÀÖ´Â °æ¿ì ¼ÓµµÁ¦¾î ÇÔ¼ö¿¡ µû¶ó Á¶Àı
+		if(emer_turn_yn > 1.0) {
+			corr_accel = user_accelCtl; 
+			corr_break = user_breakCtl;
+		} else {
+			corr_accel = user_accelCtl2; 
+			corr_break = user_breakCtl2;
+		}
+		
+		/* --- Æ®·¢Á¶°Ç¿¡ µû¸¥ angle°è¼ö Ãß°¡ ÇÔ¼ö ÇÊ¿ä : ¿ì¿­Ã¥ÀÓ -- */
+		// angle°ª¿¡ ´ëÇÑ °è¼ö °è»ê(¼Óµµ, Æ®·¢ÀÇ Á¶°Ç¿¡ µû¶ó °è»ê)
+//		streer_coeff = this.getSteerCoeff(speed, track_dist_straight);
+		streer_coeff = this.getSteerCoeff2(track_current_angle, track_forward_angles, track_curve_type);
+		
+		// Àü¹æ Àå¾Ö¹°ÀÌ ÀÖ´Â °æ¿ì 
+		if(emer_turn_yn > 0.0) {
+			streer_coeff = 1.0;
+		}
+		
+		/* --- °¡¼Ó/°¨¼Ó Ãß°¡ ÇÔ¼ö ÇÊ¿ä : ÁøÈñÃ¥ÀÓ -- */		
+		// Â÷·®ÀÇ break Á¶°Ç Ã³¸® µî
+		cmd.backward = DrivingInterface.gear_type_forward;
+		
 		if(toStart!=0 && speed<1){
-			System.out.println("ì‹œì‘ì ì´ ì•„ë‹ˆê³  ìŠ¤í”¼ë“œê°€ 1ì´í•˜ì¸ê²½ìš°");
+			System.out.println("½ÃÀÛÁ¡ÀÌ ¾Æ´Ï°í ½ºÇÇµå°¡ 1ÀÌÇÏÀÎ°æ¿ì");
 			
 			if(Math.abs(toMiddle) > track_width/2){
-				System.out.println("íŠ¸ë™ë°–ì— ìˆëŠ” ê²½ìš°");
+				System.out.println("Æ®·¢¹Û¿¡ ÀÖ´Â °æ¿ì");
 				if(toMiddle>0){
-					System.out.println("ì¤‘ì•™ì„  ì˜¤ë¥¸ìª½ì— ìˆëŠ” ê²½ìš°");
+					System.out.println("Áß¾Ó¼± ¿À¸¥ÂÊ¿¡ ÀÖ´Â °æ¿ì");
 					corr_toMiddle = 0;
 					streer_coeff -= 0.5;
-					cmd.accel += 0.5;
+					corr_accel += 0.5;
 					
 				}else{
-					System.out.println("ì¤‘ì•™ì„  ì™¼ìª½ì— ìˆëŠ” ê²½ìš°");
+					System.out.println("Áß¾Ó¼± ¿ŞÂÊ¿¡ ÀÖ´Â °æ¿ì");
 					corr_toMiddle = 0;
 					streer_coeff += 0.5;
-					cmd.accel += 0.5;
+					corr_accel += 0.5;
 				}
 				
 			}else{
-				System.out.println("íŠ¸ë™ì•ˆì— ìˆëŠ” ê²½ìš°");	
+				System.out.println("Æ®·¢¾È¿¡ ÀÖ´Â °æ¿ì");	
 				if(toMiddle<0){
-					System.out.println("ì¤‘ì•™ì„  ì˜¤ë¥¸ìª½ì— ìˆëŠ” ê²½ìš°");
+					System.out.println("Áß¾Ó¼± ¿À¸¥ÂÊ¿¡ ÀÖ´Â °æ¿ì");
 					if(dist_cars[0]<10){
-						System.out.println("ê°„ê²©ì´ 10 ì´í•˜");
+						System.out.println("°£°İÀÌ 10 ÀÌÇÏ");
 						corr_toMiddle = corr_toMiddle + 4;
 						user_best_speed = 100;
 						speed += 20;
 						streer_coeff -= 0.5;
 						cmd.backward += 1;
-						cmd.accel += 1;
+						corr_accel += 1;
 					}else{
-						System.out.println("ê°„ê²©ì´ 10 ì´ìƒ");
+						System.out.println("°£°İÀÌ 10 ÀÌ»ó");
 						cmd.backward = 0;
 					}
 					
 					
 					
 				}else{
-					System.out.println("ì¤‘ì•™ì„  ì™¼ìª½ì— ìˆëŠ” ê²½ìš°");
+					System.out.println("Áß¾Ó¼± ¿ŞÂÊ¿¡ ÀÖ´Â °æ¿ì");
 					if(dist_cars[0]<10){
-						System.out.println("ê°„ê²©ì´ 10 ì´í•˜");
+						System.out.println("°£°İÀÌ 10 ÀÌÇÏ");
 						corr_toMiddle = corr_toMiddle - 4;
 						user_best_speed = 100;
 						speed += 20;
 						streer_coeff += 0.5;
 						cmd.backward += 1;
-						cmd.accel += 1;
+						corr_accel += 1;
 						
 					}else{
-						System.out.println("ê°„ê²©ì´ 10 ì´ìƒ");
+						System.out.println("°£°İÀÌ 10 ÀÌ»ó");
 						//cmd.backward = 0;
 					}
 					
@@ -160,39 +211,11 @@ public class DrivingController {
 			}
 			
 		}
-		/* ------------ ì†ë„ ì œì–´ í•¨ìˆ˜ ì´ê´€ -------------- */	
-		// ì†ë„ ì œì–´ í•¨ìˆ˜  <-- ì´ê´€í•¨ìˆ˜
-		
-		user_best_speed = this.getBestSpeed(angle, forward_ai_dist, speed, track_dist_straight, track_curve_type);
-		
-		// ë¸Œë ˆì´í¬, ì—‘ì…€ ì œì–´ <-- ì´ê´€í•¨ìˆ˜
-		double[] user_speed_ctl = this.getSpeedCtl(speed, user_best_speed, track_dist_straight);
-		
-		double user_accelCtl = user_speed_ctl[0];  
-		double user_breakCtl = user_speed_ctl[1];  
-		/* ------------ ì†ë„ ì œì–´ í•¨ìˆ˜ ì´ê´€ -------------- */	
-		
-		
-		// ë¸Œë ˆì´í¬, ì—‘ì…€ ì œì–´ <-- ìì²´í•¨ìˆ˜(ì„ì‹œë¡œ ì „ë°© ì»¤ë¸Œ 10M ì „ì— ì°¨ëŸ‰ì˜ ì†ë„ê°€ 110K ì´ìƒì¸ ê²½ìš° ë¸Œë ˆì´í‚¹...ì»¤ë¸Œì—ì„œëŠ” ì»¤ë¸Œê²½ì‚¬ë„ë³„ë¡œ êµ¬ë¶„í•¨)
-		double[] user_speed_ctl2 = this.getSpeedCtl2(speed, user_best_speed, track_dist_straight, track_curve_level);
-		double user_accelCtl2 = user_speed_ctl2[0];  
-		double user_breakCtl2 = user_speed_ctl2[1]; 
-		/*-----------------------------------------*/
-		
-		
-		/* --- íŠ¸ë™ì¡°ê±´ì— ë”°ë¥¸ angleê³„ìˆ˜ ì¶”ê°€ í•¨ìˆ˜ í•„ìš” : ìš°ì—´ì±…ì„ -- */
-		// angleê°’ì— ëŒ€í•œ ê³„ìˆ˜ ê³„ì‚°(ì†ë„, íŠ¸ë™ì˜ ì¡°ê±´ì— ë”°ë¼ ê³„ì‚°)
-//		streer_coeff = this.getSteerCoeff(speed, track_dist_straight);
-		streer_coeff = this.getSteerCoeff2(track_current_angle, track_forward_angles, track_curve_type);
-		
-		if(emer_turn_yn > 0.0) {
-			streer_coeff = 1.0;
-		}
 		
 		if(isLogger) {
 			System.out.println("emergency turn yn : " + emer_turn_yn);
 		}
-		// ì°¨ëŸ‰ì´ íšŒì „í•  angleê°’ ê³„ì‚°
+		// Â÷·®ÀÌ È¸ÀüÇÒ angle°ª °è»ê
 		steer_angle = this.getSteerAngle(angle, corr_toMiddle, track_width, streer_coeff);
 		if(isLogger) {
 			System.out.println("steer_angle : " + steer_angle);
@@ -204,16 +227,9 @@ public class DrivingController {
 		
 		////////////////////// output values		
 		cmd.steer = steer_angle;
+		cmd.accel = corr_accel; 
+		cmd.brake = corr_break;
 		
-		// ì „ë°© ì¥ì• ë¬¼ì´ ìˆëŠ” ê²½ìš° ì†ë„ì œì–´ í•¨ìˆ˜ì— ë”°ë¼ ì¡°ì ˆ
-		if(emer_turn_yn > 0) {
-			cmd.accel = user_accelCtl; 
-			cmd.brake = user_breakCtl;
-		} else {
-			cmd.accel = user_accelCtl2; 
-			cmd.brake = user_breakCtl2;
-		}
-		cmd.backward = DrivingInterface.gear_type_forward;
 		////////////////////// END output values
 		System.out.println("====================== [end] =============================");
 		return cmd;
@@ -261,7 +277,7 @@ public class DrivingController {
 	
 
 	/**
-	 * ì „ë°© íŠ¸ë™ì •ë³´ ì´ìš© í•¨ìˆ˜ 
+	 * Àü¹æ Æ®·¢Á¤º¸ ÀÌ¿ë ÇÔ¼ö 
 	 * @param curr_track_forward_angles
 	 * @param curr_track_forward_dists
 	 * @param curr_track_current_angle
@@ -273,8 +289,8 @@ public class DrivingController {
 	 */
 	private double[] getForwardTrackInfo(double curr_speed, double[] curr_track_forward_angles, double[] curr_track_forward_dists, double curr_track_current_angle, double curr_toStart, double curr_angle, double curr_track_dist_straight, double curr_track_curve_type){
 		double[] forward_track_info = new double[2];
-		forward_track_info[0] =  curr_angle; // ë³€ê²½í•  ì „ë°© angle ì •ë³´
-		forward_track_info[1] =  0; // ì¶”ê°€ ì‚¬ìš© ì˜ˆì •
+		forward_track_info[0] =  curr_angle; // º¯°æÇÒ Àü¹æ angle Á¤º¸
+		forward_track_info[1] =  0; // Ãß°¡ »ç¿ë ¿¹Á¤
 
 		double user_forward_dists = 0;
 		
@@ -282,11 +298,11 @@ public class DrivingController {
 		double user_chagne_angle  = 0;
 		long start_time = System.nanoTime();
 		for(int i=0;i<20;i++){
-			/* ìƒëŒ€ê±°ë¦¬ ê³„ì‚° */
+			/* »ó´ë°Å¸® °è»ê */
 			user_forward_dists = curr_track_forward_dists[i] - curr_toStart;
-			System.out.println("curr_speed["+i+"]   = " + curr_speed);
-			
-			System.out.println("track_forward_dists["+i+"]   = " + user_forward_dists);
+//			System.out.println("curr_speed["+i+"]   = " + curr_speed);
+//			
+//			System.out.println("track_forward_dists["+i+"]   = " + user_forward_dists);
 //			System.out.println("track_current_angle     = " + track_current_angle*180/3.14);
 //			System.out.println("track_forward_angles["+i+"] = " + track_forward_angles[i]);
 //			System.out.println("track_forward_angles["+i+"]  = " + track_forward_angles[i]*180/3.14); 
@@ -294,25 +310,25 @@ public class DrivingController {
 			
 			track_chage_angle = curr_track_current_angle - curr_track_forward_angles[i];			
 				
-			System.out.println("track_chage_angle["+i+"]      = " + ( track_chage_angle*180/3.14 ));
-			System.out.println("track_chage_angle íŒŒì´["+i+"]   = " + track_chage_angle);
-			System.out.println("track_current_angle íŒŒì´["+i+"]  = " + ( curr_track_current_angle ));
-			System.out.println("track_forward_angles íŒŒì´["+i+"] = " + curr_track_forward_angles[i]); 
+//			System.out.println("track_chage_angle["+i+"]      = " + ( track_chage_angle*180/3.14 ));
+//			System.out.println("track_chage_angle ÆÄÀÌ["+i+"]   = " + track_chage_angle);
+//			System.out.println("track_current_angle ÆÄÀÌ["+i+"]  = " + ( curr_track_current_angle ));
+//			System.out.println("track_forward_angles ÆÄÀÌ["+i+"] = " + curr_track_forward_angles[i]); 
 			
-			if(i == 0 && user_forward_dists < 3) // ì „ë°© 1m ì´ë‚´ì¸ ê²½ìš°(íŠ¸ë™ì´ ë‹¤ìˆ˜ ë³€ê²½ë˜ëŠ” ì )
+			if(i == 0 && user_forward_dists < 3) // Àü¹æ 1m ÀÌ³»ÀÎ °æ¿ì(Æ®·¢ÀÌ ´Ù¼ö º¯°æµÇ´Â Á¡)
 			{
 				user_chagne_angle = curr_angle + track_chage_angle;
 				forward_track_info[0] = user_chagne_angle;
-				System.out.println("user_chagne_angle íŒŒì´["+i+"]    = " + user_chagne_angle);				
-				System.out.println();
+//				System.out.println("user_chagne_angle ÆÄÀÌ["+i+"]    = " + user_chagne_angle);				
+//				System.out.println();
 				
 			}else{
 				forward_track_info[0] = curr_angle;
 			}
 			long end_time = System.nanoTime();
-			System.out.println("user_chagne_angle time " + (end_time-start_time));
+//			System.out.println("user_chagne_angle time " + (end_time-start_time));
 			
-			break; // í˜„ì¬ angle ì •ë³´ë§Œ ì²˜ë¦¬í•˜ê¸°ë•Œë¬¸ì— í•œë²ˆë§Œ ì½ìŒ
+			break; // ÇöÀç angle Á¤º¸¸¸ Ã³¸®ÇÏ±â¶§¹®¿¡ ÇÑ¹ø¸¸ ÀĞÀ½
 		}
 		
 		
@@ -320,7 +336,7 @@ public class DrivingController {
 	}
 	
 	/**
-	 * í•¸ë“¤ Angle ì‚°ì¶œ
+	 * ÇÚµé Angle »êÃâ
 	 * @param curr_angle
 	 * @param curr_toMiddle
 	 * @param curr_track_width
@@ -336,7 +352,7 @@ public class DrivingController {
 	}
 	
 	/**
-	 * í•¸ë“¤ Angle ì‚°ì¶œì‹ ê³„ìˆ˜
+	 * ÇÚµé Angle »êÃâ½Ä °è¼ö
 	 * @param curr_angle
 	 * @param curr_toMiddle
 	 * @param curr_track_width
@@ -365,41 +381,41 @@ public class DrivingController {
 	
 	private double getSteerCoeff2(double track_current_angle, double[] track_forward_angles, int track_curve_type){
 		System.out.println("+++++++++++++++++++++++++++++++++++[steer coeff START]+++++++++++++++++++++++++++++++++++");
-		double best_user_steer_coeff = 0.541052; // í•¸ë“¤ê³„ìˆ˜(íŠ¸ë™ì •ë³´ì— ë”°ë¼ ì…‹íŒ…)
+		double best_user_steer_coeff = 0.541052; // ÇÚµé°è¼ö(Æ®·¢Á¤º¸¿¡ µû¶ó ¼ÂÆÃ)
 		
 		double currRemain = 0.0;
 		double currRemainAndForwardAngleSum = 0.0;
 		double realRemain = 0.0;
 		
-		//ìš°íšŒì „ì¸ ê²½ìš°
+		//¿ìÈ¸ÀüÀÎ °æ¿ì
 		if(track_curve_type == 1){
 			currRemain = ((double)3.14) - Math.abs(track_current_angle);
 			currRemainAndForwardAngleSum = Math.abs(track_forward_angles[0]) + currRemain;
 			realRemain = ((double)3.14) - currRemainAndForwardAngleSum;
 			
-			if(isLogger){
-				System.out.println("í˜„ì¬ íŠ¸ë™angleì„ ëº€ ë‚˜ë¨¸ì§€                                      : " + currRemain);
-				System.out.println("ì „ë°© ì²«ë²ˆì§¸ angle                                               : " + Math.abs(track_forward_angles[0]));
-				System.out.println("í˜„ì¬ íŠ¸ë™angleì„ ëº€ ë‚˜ë¨¸ì§€ì™€ ì „ë°© ì²«ë²ˆì§¸ angleì˜ í•©             : " + currRemainAndForwardAngleSum);
-				System.out.println("í˜„ì¬ íŠ¸ë™angleì„ ëº€ ë‚˜ë¨¸ì§€ì™€ ì „ë°© ì²«ë²ˆì§¸ angleì˜ í•©ì„ ëº€ ë‚˜ë¨¸ì§€ : " + realRemain);
-			}
+//			if(isLogger){
+//				System.out.println("ÇöÀç Æ®·¢angleÀ» »« ³ª¸ÓÁö                                      : " + currRemain);
+//				System.out.println("Àü¹æ Ã¹¹øÂ° angle                                               : " + Math.abs(track_forward_angles[0]));
+//				System.out.println("ÇöÀç Æ®·¢angleÀ» »« ³ª¸ÓÁö¿Í Àü¹æ Ã¹¹øÂ° angleÀÇ ÇÕ             : " + currRemainAndForwardAngleSum);
+//				System.out.println("ÇöÀç Æ®·¢angleÀ» »« ³ª¸ÓÁö¿Í Àü¹æ Ã¹¹øÂ° angleÀÇ ÇÕÀ» »« ³ª¸ÓÁö : " + realRemain);
+//			}
 		}
-		//ì¢ŒíšŒì „ì¸ ê²½ìš°
+		//ÁÂÈ¸ÀüÀÎ °æ¿ì
 		else if(track_curve_type == 2){
 			currRemain = Math.abs(track_current_angle);
 			currRemainAndForwardAngleSum = (((double)3.14) - Math.abs(track_forward_angles[0])) + currRemain;
 			realRemain = ((double)3.14) - currRemainAndForwardAngleSum;
 			
-			if(isLogger){
-				System.out.println("í˜„ì¬ íŠ¸ë™angle                                                  : " + currRemain);
-				System.out.println("ì „ë°© ì²«ë²ˆì§¸ angle                                               : " + Math.abs(track_forward_angles[0]));
-				System.out.println("í˜„ì¬ íŠ¸ë™angleì™€ ì „ë°© ì²«ë²ˆì§¸ angleì„ ëº€ ë‚˜ë¨¸ì§€ì˜ í•©             : " + currRemainAndForwardAngleSum);
-				System.out.println("í˜„ì¬ íŠ¸ë™angleì™€ ì „ë°© ì²«ë²ˆì§¸ angleì„ ëº€ ë‚˜ë¨¸ì§€ì˜ í•©ì„ ëº€ ë‚˜ë¨¸ì§€ : " + realRemain);
-			}
+//			if(isLogger){
+//				System.out.println("ÇöÀç Æ®·¢angle                                                  : " + currRemain);
+//				System.out.println("Àü¹æ Ã¹¹øÂ° angle                                               : " + Math.abs(track_forward_angles[0]));
+//				System.out.println("ÇöÀç Æ®·¢angle¿Í Àü¹æ Ã¹¹øÂ° angleÀ» »« ³ª¸ÓÁöÀÇ ÇÕ             : " + currRemainAndForwardAngleSum);
+//				System.out.println("ÇöÀç Æ®·¢angle¿Í Àü¹æ Ã¹¹øÂ° angleÀ» »« ³ª¸ÓÁöÀÇ ÇÕÀ» »« ³ª¸ÓÁö : " + realRemain);
+//			}
 		}
 		
-		//ê³„ìˆ˜ ì„¸íŒ… ë°©ë²• : í˜„ì¬ íŠ¸ë™ê³¼ ì „ë°© ì²«ë²ˆì§¸ íŠ¸ë™ ê°„ì˜ ê°ë„ê°€ í´ìˆ˜ë¡ ê¸‰ì»¤ë¸Œë¡œ íŒë‹¨í•˜ê³  ê³„ìˆ˜ë¥¼ ì‘ê²Œ ì„¸íŒ…
-		//í˜„ì¬ íŠ¸ë™ê³¼ ì „ë°© ì²«ë²ˆì§¸ íŠ¸ë™ì´ ê°™ì€ ë°©í–¥ì¸ ê²½ìš°.. ë¼ê³  ìƒê°ë¨
+		//°è¼ö ¼¼ÆÃ ¹æ¹ı : ÇöÀç Æ®·¢°ú Àü¹æ Ã¹¹øÂ° Æ®·¢ °£ÀÇ °¢µµ°¡ Å¬¼ö·Ï ±ŞÄ¿ºê·Î ÆÇ´ÜÇÏ°í °è¼ö¸¦ ÀÛ°Ô ¼¼ÆÃ
+		//ÇöÀç Æ®·¢°ú Àü¹æ Ã¹¹øÂ° Æ®·¢ÀÌ °°Àº ¹æÇâÀÎ °æ¿ì.. ¶ó°í »ı°¢µÊ
 		if(realRemain >= 0.0){
 			if(realRemain < 0.1){
 				best_user_steer_coeff = 1.0;
@@ -435,7 +451,7 @@ public class DrivingController {
 				best_user_steer_coeff = 0.05;
 			}
 		}
-		//í˜„ì¬ íŠ¸ë™ê³¼ ì „ë°© ì²«ë²ˆì§¸ íŠ¸ë™ì´ ë‹¤ë¥¸ ë°©í–¥ì¸ ê²½ìš°.. ë¼ê³  ìƒê°ë¨
+		//ÇöÀç Æ®·¢°ú Àü¹æ Ã¹¹øÂ° Æ®·¢ÀÌ ´Ù¸¥ ¹æÇâÀÎ °æ¿ì.. ¶ó°í »ı°¢µÊ
 		else{
 			if(realRemain < -1.0){
 				best_user_steer_coeff = 0.05;
@@ -479,7 +495,7 @@ public class DrivingController {
 	}
 	
 	/**
-	 * ìµœì  ê²½ë¡œ ì‹ë³„
+	 * ÃÖÀû °æ·Î ½Äº°
 	 * @param curr_aicars
 	 * @param curr_toMiddle
 	 * @param curr_speed
@@ -527,40 +543,40 @@ public class DrivingController {
 		ret_corr_route[1] = 0.0;
 		ret_corr_route[2] = 100.0;
 		
-		// ì¥ì• ë¬¼ ì°¨ëŸ‰ ë°°ì˜ë¡œ ë¶€í„° ì „ë°©, ì¢Œì¸¡, ìš°ì¸¡ ë³„ ai ì°¨ëŸ‰ ë°°ì—´ ìƒì„±
+		// Àå¾Ö¹° Â÷·® ¹è¿µ·Î ºÎÅÍ Àü¹æ, ÁÂÃø, ¿ìÃø º° ai Â÷·® ¹è¿­ »ı¼º
 		for(int i=1 ; i<curr_aicars.length ; i+=2) {
 			//
-			// ë‚´ì°¨ ê¸°ì¤€ ì¥ì• ì°¨ëŸ‰ê³¼ì˜ ê°„ê²©
+			// ³»Â÷ ±âÁØ Àå¾ÖÂ÷·®°úÀÇ °£°İ
 			tmp_ai_dist = this.getAiSideDist(curr_toMiddle, curr_aicars[i]);
 						
-//			if(curr_aicars[i-1] > -100.0 && curr_aicars[i-1] < 100.0) {
-//				System.out.println("AI Car #" + (i+1)/2 + " : " + curr_aicars[i-1] + ", " + tmp_ai_dist);
-//			}
+			if(curr_aicars[i-1] > -100.0 && curr_aicars[i-1] < 100.0) {
+				System.out.println("AI Car #" + (i+1)/2 + " : " + curr_aicars[i-1] + ", " + tmp_ai_dist);
+			}
 			
 			
-			// ì²˜ìŒ ì¶œë°œì‹œëŠ” ëª¨ë‘ 0.0ì´ë¯€ë¡œ ì œì™¸
+			// Ã³À½ Ãâ¹ß½Ã´Â ¸ğµÎ 0.0ÀÌ¹Ç·Î Á¦¿Ü
 			if(curr_speed == 0.0){
 				continue;
 			}
 			
-			// ë‚´ ì°¨ë³´ë‹¤ 10M ë’¤ 80M ì•ì— ìˆëŠ” aiì°¨ëŸ‰ì€ ì¼ë‹¨ ì œì™¸
+			// ³» Â÷º¸´Ù 10M µÚ 80M ¾Õ¿¡ ÀÖ´Â aiÂ÷·®Àº ÀÏ´Ü Á¦¿Ü
 			if(curr_aicars[i-1] <= backward_dist_max || curr_aicars[i-1] >= forward_dist_max) {
 				continue;
 			}
 			
-			/*================ ë‚´ì°¨ì˜ ì˜¤ë¥¸ìª½ ì™¼ìª½ ì „ë°© AI ì°¨ëŸ‰ ë°°ì—´ ìƒì„± ====================*/
-			// ë‚´ì°¨ì˜ ì „ë°© ì¶©ëŒ ìœ„ì¹˜ ai ì°¨ëŸ‰ ìˆ˜
-			// ì „ë°© 4~50M, ì¢Œì¸¡ìš°ì¸¡ 9Mí­ ì‚¬ì´ì— ìˆëŠ” ì°¨ëŸ‰ì€ ì „ë°© ì°¨ëŸ‰ìœ¼ë¡œ ê°„ì£¼
+			/*================ ³»Â÷ÀÇ ¿À¸¥ÂÊ ¿ŞÂÊ Àü¹æ AI Â÷·® ¹è¿­ »ı¼º ====================*/
+			// ³»Â÷ÀÇ Àü¹æ Ãæµ¹ À§Ä¡ ai Â÷·® ¼ö
+			// Àü¹æ 4~50M, ÁÂÃø¿ìÃø 9MÆø »çÀÌ¿¡ ÀÖ´Â Â÷·®Àº Àü¹æ Â÷·®À¸·Î °£ÁÖ
 			if((curr_aicars[i-1] > forward_dist_min && curr_aicars[i-1] < forward_dist_max) 
 					&& (tmp_ai_dist > -(my_car_width + 0.5) && tmp_ai_dist < (my_car_width + 0.5))) {
 				tmp_c_ai[tmp_c_ai_cnt] = i;
 				tmp_c_ai_cnt++;
-//				System.out.println("   --> ì „ë°© ai ì°¨ëŸ‰ìˆ˜ : " + tmp_c_ai_cnt);
+//				System.out.println("   --> Àü¹æ ai Â÷·®¼ö : " + tmp_c_ai_cnt);
 			} else {
 				
-				// ë‚´ ì°¨ì˜ ì™¼ìª½ì— ìœ„ì¹˜í•˜ëŠ” aiì°¨ëŸ‰ì„  ê±°ë¦¬ìˆœìœ¼ë¡œ arrayì— ì €ì¥
+				// ³» Â÷ÀÇ ¿ŞÂÊ¿¡ À§Ä¡ÇÏ´Â aiÂ÷·®À»  °Å¸®¼øÀ¸·Î array¿¡ ÀúÀå
 				if(tmp_ai_dist < 0.0) {
-					if(tmp_l_ai_cnt == 0) { // ì²«ë²ˆì§¸ ì™¼ìª½ aiì°¨ëŸ‰ì˜ ë°°ì—´ ì¸ë±ìŠ¤
+					if(tmp_l_ai_cnt == 0) { // Ã¹¹øÂ° ¿ŞÂÊ aiÂ÷·®ÀÇ ¹è¿­ ÀÎµ¦½º
 						tmp_l_ai[0] = i;
 					} else {
 						
@@ -585,11 +601,11 @@ public class DrivingController {
 					
 					tmp_l_ai_cnt++;
 					
-//					System.out.println("   --> ì¢Œì¸¡ ai ì°¨ëŸ‰ìˆ˜ : " + tmp_l_ai_cnt);
+//					System.out.println("   --> ÁÂÃø ai Â÷·®¼ö : " + tmp_l_ai_cnt);
 				
-				// ë‚´ ì°¨ì˜ ì˜¤ë¥¸ìª½ì— ìœ„ì¹˜í•˜ëŠ” aiì°¨ëŸ‰ì„ ê±°ë¦¬ìˆœìœ¼ë¡œ arrayì— ì €ì¥	
+				// ³» Â÷ÀÇ ¿À¸¥ÂÊ¿¡ À§Ä¡ÇÏ´Â aiÂ÷·®À» °Å¸®¼øÀ¸·Î array¿¡ ÀúÀå	
 				} else if (tmp_ai_dist >= 0.0) {
-					if(tmp_r_ai_cnt == 0) { // ì²«ë²ˆì§¸ ì™¼ìª½ aiì°¨ëŸ‰ì˜ ë°°ì—´ ì¸ë±ìŠ¤
+					if(tmp_r_ai_cnt == 0) { // Ã¹¹øÂ° ¿ŞÂÊ aiÂ÷·®ÀÇ ¹è¿­ ÀÎµ¦½º
 						tmp_r_ai[0] = i;
 					} else {
 						
@@ -615,63 +631,69 @@ public class DrivingController {
 					
 					tmp_r_ai_cnt++;
 					
-//					System.out.println("   --> ìš°ì¸¡ ai ì°¨ëŸ‰ìˆ˜ : " + tmp_r_ai_cnt);
+//					System.out.println("   --> ¿ìÃø ai Â÷·®¼ö : " + tmp_r_ai_cnt);
 				}
 			}
 			
-		} /* forë¬¸ ë */
-		/*================ ë‚´ì°¨ì˜ ì˜¤ë¥¸ìª½ ì™¼ìª½ ë°”ë¡œ ì•ìª½ AI ì°¨ëŸ‰ ë°°ì—´ ìƒì„± ë ====================*/
+		} /* for¹® ³¡ */
+		/*================ ³»Â÷ÀÇ ¿À¸¥ÂÊ ¿ŞÂÊ ¹Ù·Î ¾ÕÂÊ AI Â÷·® ¹è¿­ »ı¼º ³¡ ====================*/
 //		System.out.println("---------------------------------------------------");
 		
-		/*================ ê²½ë¡œ ê²°ì • ====================*/
-		// ai ì°¨ëŸ‰ì´ ì™¼ìª½ì— ìˆê³  ì˜¤ë¥¸ìª½ì— ì—†ëŠ” ê²½ìš°
+		/*================ °æ·Î °áÁ¤ ====================*/
+		// ai Â÷·®ÀÌ ¿ŞÂÊ¿¡ ÀÖ°í ¿À¸¥ÂÊ¿¡ ¾ø´Â °æ¿ì
 		if(tmp_r_ai_cnt == 0 && tmp_l_ai_cnt > 0) {
 			if(isLogger) {
 				System.out.println("Left ai car : " + tmp_l_ai_cnt + "," + tmp_c_ai_cnt);
 			}
 			
-			// ì „ë°©ì— ai ì°¨ëŸ‰ì´ ìˆëŠ” ê²½ìš° ì˜¤ë¥¸ë°©í–¥ìœ¼ë¡œ
+			// Àü¹æ¿¡ ai Â÷·®ÀÌ ÀÖ´Â °æ¿ì ¿À¸¥¹æÇâÀ¸·Î
 			//if(tmp_c_ai_cnt > 0  || curr_aicars[tmp_l_ai[0]] < 3.0) {
 			if(tmp_c_ai_cnt > 0) {
 				//corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
-				corr_toMiddle = 2.5 + this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_c_ai[0]]);  // ì „ë°© ì¥ì• ë¬¼ì°¨ì˜ ì°¨í­ì„ 2.5Më¼ê³  ê°€ì •
-				
-				// íŠ¸ë™ ë°”ê¹¥ìœ¼ë¡œ ë²—ì–´ë‚˜ëŠ” ê²½ìš° íŠ¸ë™ê¹Œì§€ë§Œ ê²½ë¡œ ì…‹íŒ…...ì „ë°©ì— ìˆëŠ” ì¥ì• ë¬¼ê³¼ ë¶€ë”ªí ê²½ìš°ë„ ìƒê°í•´ì•¼í•¨...
-				if((curr_track_width/2 + curr_toMiddle) < corr_toMiddle ) {
-					corr_toMiddle = curr_track_width/2  + curr_toMiddle + 1.0;
-				}
+				corr_toMiddle = 3.0 + this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_c_ai[0]]);  // Àü¹æ Àå¾Ö¹°Â÷ÀÇ Â÷ÆøÀ» 2.5M¶ó°í °¡Á¤
 				
 				emer_turn_yn = 1.0;
+				// Æ®·¢ ¹Ù±ùÀ¸·Î ¹ş¾î³ª´Â °æ¿ì Æ®·¢±îÁö¸¸ °æ·Î ¼ÂÆÃ...Àü¹æ¿¡ ÀÖ´Â Àå¾Ö¹°°ú ºÎµúÈú °æ¿ìµµ »ı°¢ÇØ¾ßÇÔ...
+				if((curr_track_width/2 + curr_toMiddle) < corr_toMiddle ) {
+					corr_toMiddle = curr_track_width/2  + curr_toMiddle;
+					emer_turn_yn = 2.0;
+				}
+				
+				
 			} else {
 				
 				corr_toMiddle = this.getKeepTrackSideDist(curr_toMiddle, curr_track_width);
 			}
 		
-	    // ai ì°¨ëŸ‰ì´ ì˜¤ë¥¸ìª½ì— ìˆê³  ì™¼ìª½ì— ì—†ëŠ” ê²½ìš°
+	    // ai Â÷·®ÀÌ ¿À¸¥ÂÊ¿¡ ÀÖ°í ¿ŞÂÊ¿¡ ¾ø´Â °æ¿ì
 		} else if (tmp_r_ai_cnt > 0 && tmp_l_ai_cnt == 0) {
 			if(isLogger) {
 				System.out.println("Right ai car : " + tmp_r_ai_cnt + "," + tmp_c_ai_cnt);
 			}
 			
-			// ë°”ë¡œ ì•ì— ai ì°¨ëŸ‰ì´ ìˆëŠ” ê²½ìš° ì™¼ìª½ë°©í–¥ìœ¼ë¡œ
+			// ¹Ù·Î ¾Õ¿¡ ai Â÷·®ÀÌ ÀÖ´Â °æ¿ì ¿ŞÂÊ¹æÇâÀ¸·Î
 			//if(tmp_c_ai_cnt > 0 || curr_aicars[tmp_r_ai[0]] > -3.0) {
 			if(tmp_c_ai_cnt > 0) {
 				//corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
-				corr_toMiddle = -2.5 + this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_c_ai[0]]);
+				corr_toMiddle = -3.0 + this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_c_ai[0]]);
 				
-				// íŠ¸ë™ ë°”ê¹¥ì¸ ê²½ìš°
+				System.out.println("  ÀÌµ¿ÇÒ °Å¸® : " + corr_toMiddle + ", Æ®·¢±îÁö °Å¸® : " + (-curr_track_width/2 + curr_toMiddle));
+				emer_turn_yn = 1.0;
+				// Æ®·¢ ¹Ù±ùÀÎ °æ¿ì
 				if((-curr_track_width/2 + curr_toMiddle) > corr_toMiddle ) {
-					corr_toMiddle = -curr_track_width/2  + curr_toMiddle - 1.0;
+					corr_toMiddle = -curr_track_width/2  + curr_toMiddle;
+					
+					emer_turn_yn = 2.0;
 				}
 				
-				emer_turn_yn = 1.0;
+				
 				
 			} else {
 				
 				corr_toMiddle = this.getKeepTrackSideDist(curr_toMiddle, curr_track_width);
 			}
 		
-		// ì–‘ìª½ ëª¨ë‘ ì°¨ëŸ‰ì´ ìˆëŠ” ê²½ìš°
+		// ¾çÂÊ ¸ğµÎ Â÷·®ÀÌ ÀÖ´Â °æ¿ì
 		} else if (tmp_r_ai_cnt > 0 && tmp_l_ai_cnt > 0) {
 			if(isLogger) {
 				System.out.println("Left and Right ai car : " + tmp_l_ai_cnt + "," + tmp_r_ai_cnt + "," + tmp_c_ai_cnt);
@@ -679,77 +701,80 @@ public class DrivingController {
 			
 			double tmp_left_width = 0.0;
 			double tmp_right_width = 0.0;
-			// ì „ë°© ì°¨ëŸ‰ì´ ìˆëŠ” ê²½ìš°
+			// Àü¹æ Â÷·®ÀÌ ÀÖ´Â °æ¿ì
 			if(tmp_c_ai_cnt > 0) {
 				
-				// ì¢Œìš°, ì „ë°© ëª¨ë‘ ì°¨ëŸ‰ì´ ìˆëŠ” ê²½ìš° ì¢Œ/ìš° ì¤‘ ê°„ê²©ì´ í° ë°©í–¥ì˜ ì¤‘ê°„ìœ¼ë¡œ ì§„í–‰
+				// ÁÂ¿ì, Àü¹æ ¸ğµÎ Â÷·®ÀÌ ÀÖ´Â °æ¿ì ÁÂ/¿ì Áß °£°İÀÌ Å« ¹æÇâÀÇ Áß°£À¸·Î ÁøÇà
 				tmp_left_width = this.getAiSideDist(curr_aicars[tmp_l_ai[0]],curr_aicars[tmp_c_ai[0]]);
 				tmp_right_width = this.getAiSideDist(curr_aicars[tmp_c_ai[0]],curr_aicars[tmp_r_ai[0]]);
 				
+				emer_turn_yn = 1.0;
+				
 				if(tmp_left_width > tmp_right_width) {
 					
-					//ê°„ê²©ì´ ë‚´ ì°¨ëŸ‰ì´ ì§€ë‚˜ê°€ê¸°ì— ì¶©ë¶„í•œ ê²½ìš°ë§Œ ì§„í–‰
+					//°£°İÀÌ ³» Â÷·®ÀÌ Áö³ª°¡±â¿¡ ÃæºĞÇÑ °æ¿ì¸¸ ÁøÇà
 					if(tmp_left_width > my_car_width) {
 						corr_toMiddle = this.getAiSideDist(curr_toMiddle,curr_aicars[tmp_l_ai[0]]) + tmp_left_width/2;
 						
-					//ê°„ê²©ì´ ë‚´ ì°¨ëŸ‰ì´ ì§€ë‚˜ê°€ê¸°ì— ì¶©ë¶„í•˜ì§€ ì•Šì€ ê²½ìš°  ì–‘ìª½ ì°¨ëŸ‰ì˜ ë°”ê¹¥ìª½ìœ¼ë¡œ ì§„í–‰(ê°„ê²©ì´ ì‘ì€ ìª½ ìš°ì„  ì²´í¬)  
+					//°£°İÀÌ ³» Â÷·®ÀÌ Áö³ª°¡±â¿¡ ÃæºĞÇÏÁö ¾ÊÀº °æ¿ì  ¾çÂÊ Â÷·®ÀÇ ¹Ù±ùÂÊÀ¸·Î ÁøÇà(°£°İÀÌ ÀÛÀº ÂÊ ¿ì¼± Ã¼Å©)  
 					} else {
-						// ì°¨ëŸ‰ì´ ë°”ë¡œ ì˜†ì— ìˆëŠ”ì§€ ì²´í¬(ë°”ë¡œ ì˜†ì— ìˆìŒ...ì¶©ëŒ)
+						// Â÷·®ÀÌ ¹Ù·Î ¿·¿¡ ÀÖ´ÂÁö Ã¼Å©(¹Ù·Î ¿·¿¡ ÀÖÀ½...Ãæµ¹)
 						if(curr_aicars[tmp_r_ai[0]-1] > my_car_length) {
 							corr_toMiddle = this.getAiSideDist(curr_toMiddle,curr_aicars[tmp_r_ai[0]]) + my_car_width;
 						} else if(curr_aicars[tmp_l_ai[0]-1] > my_car_length) {
 							corr_toMiddle = this.getAiSideDist(curr_toMiddle,curr_aicars[tmp_l_ai[0]]) + my_car_width;
 						} else {
-							// ì–‘ìª½ì´ ëª¨ë‘ ì°¨ëŸ‰ìœ¼ë¡œ ë§‰í˜€ ìˆëŠ” ê²½ìš° ì „ë°© ì°¨ëŸ‰ì´ 7M ì•ì— ì˜¬ë•Œê¹Œì§€ëŠ” í˜„ì¬ ì§„í–‰ê²½ë¡œ ìœ ì§€
+							// ¾çÂÊÀÌ ¸ğµÎ Â÷·®À¸·Î ¸·Çô ÀÖ´Â °æ¿ì Àü¹æ Â÷·®ÀÌ 7M ¾Õ¿¡ ¿Ã¶§±îÁö´Â ÇöÀç ÁøÇà°æ·Î À¯Áö
 							if(curr_aicars[tmp_c_ai[0]-1] > 7.0) {
 								corr_toMiddle = this.getKeepTrackSideDist(curr_toMiddle, curr_track_width);
-							// ì „ë°©, ì–‘ìª½ì´ ëª¨ë‘ ë§‰íë•Œ ë¸Œë ˆì´í‚¹
+							// Àü¹æ, ¾çÂÊÀÌ ¸ğµÎ ¸·Èú¶§ ºê·¹ÀÌÅ·
 							} else {
 								
 								corr_toMiddle = -100.0;
+								emer_turn_yn = 2.0;
 							}
 						}
 						
 					}
 				} else {
-					//ê°„ê²©ì´ ë‚´ ì°¨ëŸ‰ì´ ì§€ë‚˜ê°€ê¸°ì— ì¶©ë¶„í•œ ê²½ìš°ë§Œ ì§„í–‰
+					//°£°İÀÌ ³» Â÷·®ÀÌ Áö³ª°¡±â¿¡ ÃæºĞÇÑ °æ¿ì¸¸ ÁøÇà
 					if(tmp_right_width > my_car_width) {
 						corr_toMiddle = this.getAiSideDist(curr_toMiddle,curr_aicars[tmp_r_ai[0]]) - tmp_right_width/2;
 						
-					//ê°„ê²©ì´ ë‚´ ì°¨ëŸ‰ì´ ì§€ë‚˜ê°€ê¸°ì— ì¶©ë¶„í•˜ì§€ ì•Šì€ ê²½ìš°  ì–‘ìª½ ì°¨ëŸ‰ì˜ ë°”ê¹¥ìª½ìœ¼ë¡œ ì§„í–‰(ê°„ê²©ì´ ì‘ì€ ìª½ ìš°ì„  ì²´í¬)  	
+					//°£°İÀÌ ³» Â÷·®ÀÌ Áö³ª°¡±â¿¡ ÃæºĞÇÏÁö ¾ÊÀº °æ¿ì  ¾çÂÊ Â÷·®ÀÇ ¹Ù±ùÂÊÀ¸·Î ÁøÇà(°£°İÀÌ ÀÛÀº ÂÊ ¿ì¼± Ã¼Å©)  	
 					} else {
-						// ì°¨ëŸ‰ì´ ë°”ë¡œ ì˜†ì— ìˆëŠ”ì§€ ì²´í¬(ë°”ë¡œ ì˜†ì— ìˆìŒ...ì¶©ëŒ)
+						// Â÷·®ÀÌ ¹Ù·Î ¿·¿¡ ÀÖ´ÂÁö Ã¼Å©(¹Ù·Î ¿·¿¡ ÀÖÀ½...Ãæµ¹)
 						if(curr_aicars[tmp_l_ai[0]-1] > my_car_length) {
 							corr_toMiddle = this.getAiSideDist(curr_toMiddle,curr_aicars[tmp_l_ai[0]]) + my_car_width;
 						} else if(curr_aicars[tmp_r_ai[0]-1] > my_car_length) {
 							corr_toMiddle = this.getAiSideDist(curr_toMiddle,curr_aicars[tmp_r_ai[0]]) + my_car_width;
 						} else {
-							// ì–‘ìª½ì´ ëª¨ë‘ ì°¨ëŸ‰ìœ¼ë¡œ ë§‰í˜€ ìˆëŠ” ê²½ìš° ì „ë°© ì°¨ëŸ‰ì´ 7M ì•ì— ì˜¬ë•Œê¹Œì§€ëŠ” í˜„ì¬ ì§„í–‰ê²½ë¡œ ìœ ì§€
+							// ¾çÂÊÀÌ ¸ğµÎ Â÷·®À¸·Î ¸·Çô ÀÖ´Â °æ¿ì Àü¹æ Â÷·®ÀÌ 7M ¾Õ¿¡ ¿Ã¶§±îÁö´Â ÇöÀç ÁøÇà°æ·Î À¯Áö
 							if(curr_aicars[tmp_c_ai[0]-1] > 7.0) {
 								corr_toMiddle = this.getKeepTrackSideDist(curr_toMiddle, curr_track_width);
-							// ì „ë°©, ì–‘ìª½ì´ ëª¨ë‘ ë§‰íë•Œ ë¸Œë ˆì´í‚¹
+							// Àü¹æ, ¾çÂÊÀÌ ¸ğµÎ ¸·Èú¶§ ºê·¹ÀÌÅ·
 							} else {
 								corr_toMiddle = -100.0;
+								emer_turn_yn = 2.0;
 							}
 						}
 					}
 				}
 				
-				emer_turn_yn = 1.0;
-		
-			// ì „ë°©ì— ì¥ì• ë¬¼ì°¨ëŸ‰ì´ ì—†ëŠ” ê²½ìš° í˜„ì¬ ê²½ë¡œ ìœ ì§€
+
+			// Àü¹æ¿¡ Àå¾Ö¹°Â÷·®ÀÌ ¾ø´Â °æ¿ì ÇöÀç °æ·Î À¯Áö
 			} else {
 				
 				//corr_toMiddle = this.getAiSideDist(curr_toMiddle,curr_aicars[tmp_l_ai[0]]) + this.getAiSideDist(curr_aicars[tmp_l_ai[0],curr_aicars[tmp_r_ai[0]])/2;
 				corr_toMiddle = this.getKeepTrackSideDist(curr_toMiddle, curr_track_width);
 			}
 			
-		// ì–‘ìª½ì— aiì°¨ëŸ‰ì´ ì—†ëŠ” ê²½ìš°	
+		// ¾çÂÊ¿¡ aiÂ÷·®ÀÌ ¾ø´Â °æ¿ì	
 		} else {
 			
 			double tmp_fst_forward_width = 0.0;
 			
-			// ì „ë°©ì— aiì°¨ëŸ‰ì´ ìˆëŠ” ê²½ìš°
+			// Àü¹æ¿¡ aiÂ÷·®ÀÌ ÀÖ´Â °æ¿ì
 			if(tmp_c_ai_cnt > 0) {
 				if(isLogger) {
 					System.out.println("Forward ai car : " + tmp_c_ai_cnt);
@@ -758,7 +783,7 @@ public class DrivingController {
 				tmp_fst_forward_width = this.getAiSideDist(curr_toMiddle,curr_aicars[tmp_c_ai[0]]);
 				
 				
-				if ( tmp_fst_forward_width < 0.0) { // ai ì°¨ëŸ‰ ì¤‘ì‹¬ì´ ì™¼í¸ì— ìˆì„ë•Œ
+				if ( tmp_fst_forward_width < 0.0) { // ai Â÷·® Áß½ÉÀÌ ¿ŞÆí¿¡ ÀÖÀ»¶§
 				    //corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
 					
 					if(curr_angle < 0.0) {
@@ -767,10 +792,10 @@ public class DrivingController {
 						corr_toMiddle = tmp_fst_forward_width + my_car_width + 1.0;
 					}
 					
-					// íŠ¸ë™ì„ ë²—ì–´ë‚˜ëŠ” ê²½ìš° ë°˜ëŒ€ë°©í–¥ìœ¼ë¡œ
+					// Æ®·¢À» ¹ş¾î³ª´Â °æ¿ì ¹İ´ë¹æÇâÀ¸·Î
 					if( ((curr_track_width-2)/2 + curr_toMiddle) < corr_toMiddle ) {
 						
-						// ì§ì„ ì£¼ë¡œì—ì„œ 
+						// Á÷¼±ÁÖ·Î¿¡¼­ 
 						if (curr_track_dist_straight > 0.0 ) {
 							corr_toMiddle = tmp_fst_forward_width - my_car_width - 2.0;
 						} else {
@@ -780,7 +805,7 @@ public class DrivingController {
 					}
 					
 					
-				} else {  // ai ì°¨ëŸ‰ ì¤‘ì‹¬ì´ ì˜¤ë¥¸í¸ì— ìˆì„ë•Œ
+				} else {  // ai Â÷·® Áß½ÉÀÌ ¿À¸¥Æí¿¡ ÀÖÀ»¶§
 
 					
 					if(curr_angle > 0.0) {
@@ -789,10 +814,10 @@ public class DrivingController {
 						corr_toMiddle = tmp_fst_forward_width - my_car_width - 1.0;
 					}
 
-					// ì§ì„ ì£¼ë¡œì—ì„œ íŠ¸ë™ì„ ë²—ì–´ë‚˜ëŠ” ê²½ìš° ë°˜ëŒ€ìœ¼ë¡œ
+					// Á÷¼±ÁÖ·Î¿¡¼­ Æ®·¢À» ¹ş¾î³ª´Â °æ¿ì ¹İ´ëÀ¸·Î
 					if((-(curr_track_width-2)/2 + curr_toMiddle) > corr_toMiddle ) {
 						
-						// ì§ì„ ì£¼ë¡œì—ì„œ 
+						// Á÷¼±ÁÖ·Î¿¡¼­ 
 						if (curr_track_dist_straight > 0.0 ) {
 							corr_toMiddle = tmp_fst_forward_width + my_car_width + 2.0;
 						} else {
@@ -814,19 +839,19 @@ public class DrivingController {
 					System.out.println("track_whole_dist : " + curr_whole_track_dist_straight);
 				}
 				
-				// ìš°íšŒì „ ì½”ìŠ¤
+				// ¿ìÈ¸Àü ÄÚ½º
 				if(curr_track_curve_type == 1.0) {
 					if(isLogger) {
 						System.out.println("Right Curve " + curr_track_dist_straight + " forward.");
 					}
 					
-					//ì „ë°© 10M ì „ê¹Œì§€ëŠ” ì¢Œì¸¡ìœ¼ë¡œ ì£¼í–‰
+					//Àü¹æ 10M Àü±îÁö´Â ÁÂÃøÀ¸·Î ÁÖÇà
 					if(curr_track_dist_straight > 15.0 && curr_whole_track_dist_straight > 50.0) {
-						// í˜„ì¬ ë‚´ ì°¨ì˜ ìœ„ì¹˜ê°€ ì¤‘ì•™ì„  ì¢Œì¸¡ì— ìˆëŠ” ê²½ìš°ë§Œ ì¢Œì¸¡ìœ¼ë¡œ ìš°ì¸¡ì— ìˆëŠ” ê²½ìš°ëŠ” ì¤‘ì•™ì„ ìœ¼ë¡œ
+						// ÇöÀç ³» Â÷ÀÇ À§Ä¡°¡ Áß¾Ó¼± ÁÂÃø¿¡ ÀÖ´Â °æ¿ì¸¸ ÁÂÃøÀ¸·Î ¿ìÃø¿¡ ÀÖ´Â °æ¿ì´Â Áß¾Ó¼±À¸·Î
 						if(curr_toMiddle > 0) {
 							corr_toMiddle = (-(curr_track_width-3)/2 + curr_toMiddle)/5;
 							
-							// íŠ¸ë™ ë°”ê¹¥ì¸ ê²½ìš°
+							// Æ®·¢ ¹Ù±ùÀÎ °æ¿ì
 							if((-curr_track_width/2 + 1.5 + curr_toMiddle) > corr_toMiddle ) {
 								corr_toMiddle = -curr_track_width/2  + curr_toMiddle + 2.0;
 							}
@@ -847,14 +872,14 @@ public class DrivingController {
 						System.out.println("Left Curve " + curr_track_dist_straight + " forward.");
 					}
 					
-					//ì „ë°© 10M ì „ê¹Œì§€ëŠ” ìš°ì¸¡ìœ¼ë¡œ ì£¼í–‰
+					//Àü¹æ 10M Àü±îÁö´Â ¿ìÃøÀ¸·Î ÁÖÇà
 					if(curr_track_dist_straight > 15.0  && curr_whole_track_dist_straight > 50.0) {
 						
-						// í˜„ì¬ ë‚´ ì°¨ì˜ ìœ„ì¹˜ê°€ ì¤‘ì•™ì„  ìš°ì¸¡ì— ìˆëŠ” ê²½ìš°ë§Œ ìš°ì¸¡ìœ¼ë¡œ ì¢Œì¸¡ì— ìˆëŠ” ê²½ìš°ëŠ” ì¤‘ì•™ì„ ìœ¼ë¡œ
+						// ÇöÀç ³» Â÷ÀÇ À§Ä¡°¡ Áß¾Ó¼± ¿ìÃø¿¡ ÀÖ´Â °æ¿ì¸¸ ¿ìÃøÀ¸·Î ÁÂÃø¿¡ ÀÖ´Â °æ¿ì´Â Áß¾Ó¼±À¸·Î
 						if(curr_toMiddle < 0) {
 							corr_toMiddle = ((curr_track_width-3)/2 + curr_toMiddle)/5;
 							
-							// íŠ¸ë™ ë°”ê¹¥ìœ¼ë¡œ ë²—ì–´ë‚˜ëŠ” ê²½ìš° íŠ¸ë™ê¹Œì§€ë§Œ ê²½ë¡œ ì…‹íŒ…...ì „ë°©ì— ìˆëŠ” ì¥ì• ë¬¼ê³¼ ë¶€ë”ªí ê²½ìš°ë„ ìƒê°í•´ì•¼í•¨...
+							// Æ®·¢ ¹Ù±ùÀ¸·Î ¹ş¾î³ª´Â °æ¿ì Æ®·¢±îÁö¸¸ °æ·Î ¼ÂÆÃ...Àü¹æ¿¡ ÀÖ´Â Àå¾Ö¹°°ú ºÎµúÈú °æ¿ìµµ »ı°¢ÇØ¾ßÇÔ...
 							if((curr_track_width/2 - 1.5 + curr_toMiddle) < corr_toMiddle ) {
 								corr_toMiddle = curr_track_width/2  + curr_toMiddle - 2.0;
 							}
@@ -881,7 +906,7 @@ public class DrivingController {
 		ret_corr_route[0] = emer_turn_yn;
 		ret_corr_route[1] = corr_toMiddle;
 		if(tmp_c_ai_cnt > 0) {
-			ret_corr_route[2] = curr_aicars[tmp_c_ai[0]-1]; // ì œì¼ ê·¼ì ‘í•œ ì „ë°© ai ì°¨ëŸ‰ ê±°ë¦¬
+			ret_corr_route[2] = curr_aicars[tmp_c_ai[0]-1]; // Á¦ÀÏ ±ÙÁ¢ÇÑ Àü¹æ ai Â÷·® °Å¸®
 		}
 		if(isLogger) {
 			System.out.println("corr_toMiddle : " + corr_toMiddle);
@@ -891,7 +916,7 @@ public class DrivingController {
 	}
 	
 	/**
-	 * ì°¨ëŸ‰ ê°„ Midê°’ìœ¼ë¡œ ì„œë¡œì˜ ê°„ê²© êµ¬í•˜ê¸° (ë‚´ì°¨ ê¸°ì¤€)
+	 * Â÷·® °£ Mid°ªÀ¸·Î ¼­·ÎÀÇ °£°İ ±¸ÇÏ±â (³»Â÷ ±âÁØ)
 	 * @param curr_toMiddle
 	 * @param curr_aiMiddle
 	 * @return
@@ -905,7 +930,7 @@ public class DrivingController {
 	}
 	
 	/**
-	 * Midê°’ìœ¼ë¡œ íŠ¸ë™ ì‚¬ì´ë“œê¹Œì§€ ê°„ê²© êµ¬í•˜ê¸° (ë‚´ì°¨ ê¸°ì¤€)
+	 * Mid°ªÀ¸·Î Æ®·¢ »çÀÌµå±îÁö °£°İ ±¸ÇÏ±â (³»Â÷ ±âÁØ)
 	 * @param curr_toMiddle
 	 * @param curr_track_width
 	 * @param side
@@ -914,9 +939,9 @@ public class DrivingController {
 	private double getTrackSideDist (double curr_toMiddle, double curr_track_width, int side) {
 		double ret_dist = 0.0;
 		
-		if(side == 1) { // ì˜¤ë¥¸ìª½ ì‚¬ì´ë“œê¹Œì§€ ê±°ë¦¬
+		if(side == 1) { // ¿À¸¥ÂÊ »çÀÌµå±îÁö °Å¸®
 			ret_dist = curr_track_width/2 + curr_toMiddle;
-		} else if(side == 2) { // ì™¼ìª½ ì‚¬ì´ë“œê¹Œì§€ ê±°ë¦¬
+		} else if(side == 2) { // ¿ŞÂÊ »çÀÌµå±îÁö °Å¸®
 			ret_dist = -(curr_track_width/2) + curr_toMiddle;
 		}
 		
@@ -924,8 +949,8 @@ public class DrivingController {
 	}
 	
 	/**
-	 * í˜„ì¬ ì§„í–‰ ê²½ë¡œë¥¼ ìœ ì§€í•˜ê¸° ìœ„í•œ ê°’ (ë‚´ì°¨ ê¸°ì¤€)
-	 * 0ê°’ì„ ì…‹íŒ…í•˜ë©´ í˜„ì¬ ê²½ë¡œê°€ ìœ ì§€ë˜ë‚˜ ê³„ì‚°ì‹œ ë¯¸ì„¸ë³´ì •
+	 * ÇöÀç ÁøÇà °æ·Î¸¦ À¯ÁöÇÏ±â À§ÇÑ °ª (³»Â÷ ±âÁØ)
+	 * 0°ªÀ» ¼ÂÆÃÇÏ¸é ÇöÀç °æ·Î°¡ À¯ÁöµÇ³ª °è»ê½Ã ¹Ì¼¼º¸Á¤
 	 * @param curr_toMiddle
 	 * @param curr_track_width
 	 * @return
@@ -935,7 +960,7 @@ public class DrivingController {
 		double tmp_r_track_side = this.getTrackSideDist(curr_toMiddle, curr_track_width, 1);
 		double tmp_l_track_side = this.getTrackSideDist(curr_toMiddle, curr_track_width, 2);
 		
-		//ì „ë°©ì— ì¥ì• ë¬¼ ì°¨ëŸ‰ì´ ì—†ëŠ” ê²½ìš°ëŠ” ê·¸ëƒ¥ ê°€ë˜ ê¸¸ë¡œ
+		//Àü¹æ¿¡ Àå¾Ö¹° Â÷·®ÀÌ ¾ø´Â °æ¿ì´Â ±×³É °¡´ø ±æ·Î
 		
 		if(tmp_r_track_side < 0.0 || tmp_l_track_side > 0.0) {
 			if(tmp_r_track_side < 0.0) {
@@ -953,7 +978,7 @@ public class DrivingController {
 	
 	
 	/**
-	 *  ìµœì  ì†ë„ ê³„ì‚°
+	 *  ÃÖÀû ¼Óµµ °è»ê
 	 * @param curr_speed
 	 * @param curr_track_dist_straight
 	 * @param curr_track_curve_type
@@ -967,9 +992,9 @@ public class DrivingController {
 		
 		double curr_max_speed = 100;
 		
-		// 90 ~ 130 ë§ˆì¼ ì¼ê²½ìš°  ì´ˆë‹¹ 40.2~58.1m ì´ë™ : 
-		// 70 ~  90  ë§ˆì¼ ì¼ê²½ìš° ì´ˆë‹¹ 31.2~40.2m ì´ë™ : 
-		//    ~  70  ë§ˆì¼ ì¼ê²½ìš° ì´ˆë‹¹ 0   ~31.2m ì´ë™ : 
+		// 90 ~ 130 ¸¶ÀÏ ÀÏ°æ¿ì  ÃÊ´ç 40.2~58.1m ÀÌµ¿ : 
+		// 70 ~  90  ¸¶ÀÏ ÀÏ°æ¿ì ÃÊ´ç 31.2~40.2m ÀÌµ¿ : 
+		//    ~  70  ¸¶ÀÏ ÀÏ°æ¿ì ÃÊ´ç 0   ~31.2m ÀÌµ¿ : 
 				
 		if(curr_track_dist_straight > 100){
 			curr_max_speed = 50;
@@ -987,7 +1012,7 @@ public class DrivingController {
 			user_c_coeff = (float)1.5;
 			user_d_coeff = (float)-1.2;
 		}else{
-			curr_max_speed = 25; // 90ë„ ì´ìƒì¼ë•Œ ìµœì  ì†ë„(88~90km/h)
+			curr_max_speed = 25; // 90µµ ÀÌ»óÀÏ¶§ ÃÖÀû ¼Óµµ(88~90km/h)
 			
 			user_c_coeff = (float)1.0;
 			user_d_coeff = (float)-1.5;
@@ -1013,27 +1038,27 @@ public class DrivingController {
 			curr_max_speed = curr_max_speed*0.1;
 		}
 		 
-//		/*í…ŒìŠ¤íŠ¸ ì…‹íŒ… */
+//		/*Å×½ºÆ® ¼ÂÆÃ */
 		//curr_max_speed = 25;
-//		/*í…ŒìŠ¤íŠ¸ ì…‹íŒ… */
+//		/*Å×½ºÆ® ¼ÂÆÃ */
 		
 		user_best_speed = curr_max_speed * (1 - Math.exp(-user_c_coeff/curr_max_speed * curr_dist_aicar - user_d_coeff));
 		if(isLogger) {
-			System.out.println("+++++++++++++++++ ìµœì  ì†ë„ ê³„ì‚°[start] ++++++++++++++++++++++");
+			System.out.println("+++++++++++++++++ ÃÖÀû ¼Óµµ °è»ê[start] ++++++++++++++++++++++");
 			System.out.println("curr_max_speed          ="+curr_max_speed);
 			System.out.println("user_best_speed         ="+user_best_speed);
 			System.out.println("curr_speed              ="+curr_speed + " m/s");
 			System.out.println("curr_speed              ="+curr_speed*3.6 + " km/h");
 			System.out.println("curr_angle              ="+curr_angle);
-			System.out.println("curr_angle_abs          ="+curr_angle_abs + " ë„");
+			System.out.println("curr_angle_abs          ="+curr_angle_abs + " µµ");
 			System.out.println("curr_track_dist_straight="+curr_track_dist_straight);
-			System.out.println("+++++++++++++++++ ìµœì  ì†ë„ ê³„ì‚°[end] ++++++++++++++++++++++");
+			System.out.println("+++++++++++++++++ ÃÖÀû ¼Óµµ °è»ê[end] ++++++++++++++++++++++");
 		}
 		return user_best_speed;
 	}
 	
 	/**
-	 * ë¸Œë ˆì´í¬, ì—‘ì…€ ì œì–´ í•¨ìˆ˜
+	 * ºê·¹ÀÌÅ©, ¿¢¼¿ Á¦¾î ÇÔ¼ö
 	 * @param curr_speed
 	 * @param curr_best_speed
 	 * @param curr_track_dist_straight
@@ -1046,7 +1071,7 @@ public class DrivingController {
 
 		if(curr_speed > curr_best_speed) {
 			if(isLogger) {
-				System.out.println("+++++++++++++++++ ë¸Œë ˆì´í¬, ì—‘ì…€ ì œì–´ í•¨ìˆ˜[start] ++++++++++++++++++++++");
+				System.out.println("+++++++++++++++++ ºê·¹ÀÌÅ©, ¿¢¼¿ Á¦¾î ÇÔ¼ö[start] ++++++++++++++++++++++");
 				System.out.println("curr_speed               = "+curr_speed);
 				System.out.println("curr_best_speed          = "+curr_best_speed);
 				System.out.println("curr_track_dist_straight = "+curr_track_dist_straight);
@@ -1060,7 +1085,7 @@ public class DrivingController {
 			}
 			if(isLogger) {
 				System.out.println("user_brakeCtl="+user_speed_ctl[1]);
-				System.out.println("+++++++++++++++++ ë¸Œë ˆì´í¬, ì—‘ì…€ ì œì–´ í•¨ìˆ˜[end] ++++++++++++++++++++++");
+				System.out.println("+++++++++++++++++ ºê·¹ÀÌÅ©, ¿¢¼¿ Á¦¾î ÇÔ¼ö[end] ++++++++++++++++++++++");
 			}
 			
 		}else{
@@ -1072,7 +1097,7 @@ public class DrivingController {
 	}
 	
 	/**
-	 * ë¸Œë ˆì´í¬, ì—‘ì…€ ì œì–´ í•¨ìˆ˜(ìì²´)
+	 * ºê·¹ÀÌÅ©, ¿¢¼¿ Á¦¾î ÇÔ¼ö(ÀÚÃ¼)
 	 * @param curr_speed
 	 * @param curr_best_speed
 	 * @param curr_track_dist_straight
@@ -1087,7 +1112,7 @@ public class DrivingController {
 
 		//if(curr_speed > curr_best_speed) {
 			if(isLogger) {
-				System.out.println("+++++++++++++++++ ë¸Œë ˆì´í¬, ì—‘ì…€ ì œì–´ í•¨ìˆ˜2[start] ++++++++++++++++++++++");
+				System.out.println("+++++++++++++++++ ºê·¹ÀÌÅ©, ¿¢¼¿ Á¦¾î ÇÔ¼ö2[start] ++++++++++++++++++++++");
 				System.out.println("curr_speed               = "+curr_speed);
 				System.out.println("curr_best_speed          = "+curr_best_speed);
 				System.out.println("curr_track_dist_straight = "+curr_track_dist_straight);
@@ -1235,7 +1260,7 @@ public class DrivingController {
 			if(isLogger) {
 				System.out.println("user_accelCtl="+user_speed_ctl[0]);
 				System.out.println("user_brakeCtl="+user_speed_ctl[1]);
-				System.out.println("+++++++++++++++++ ë¸Œë ˆì´í¬, ì—‘ì…€ ì œì–´ í•¨ìˆ˜2[end] ++++++++++++++++++++++");
+				System.out.println("+++++++++++++++++ ºê·¹ÀÌÅ©, ¿¢¼¿ Á¦¾î ÇÔ¼ö2[end] ++++++++++++++++++++++");
 			}
 			
 		//}else{
@@ -1244,6 +1269,160 @@ public class DrivingController {
 
 		
 		return user_speed_ctl;		
+	}
+	
+	/**
+	 * ÃÖÀû ÀÌµ¿ ÇÔ¼ö(±âº»)
+	 * @param curr_toMiddle
+	 * @param curr_track_width
+	 * @param curr_track_curve_type
+	 * @return
+	 */
+	private double getBestDist(double curr_toMiddle, double curr_track_width, double curr_track_curve_type){
+		double user_change_dist = 0.0;		
+		
+		if(curr_track_curve_type == 1){ // ¿ìÈ¸Àü 
+			user_change_dist = curr_toMiddle + ( curr_track_width/3 );  
+		}else if(curr_track_curve_type == 2){ // ÁÂÈ¸Àü
+			user_change_dist = curr_toMiddle - ( curr_track_width/3 );
+		}else{
+			user_change_dist = curr_toMiddle;
+		}		
+		
+		return user_change_dist;		
+	}	
+	
+	/**
+	 * Àå¾Ö¹° Ã³¸® ÇÔ¼ö
+	 * @param curr_aicars
+	 * @param change_toMiddle
+	 * @param curr_speed
+	 * @param curr_track_width
+	 * @param curr_track_dist_straight
+	 * @param curr_track_curve_type
+	 * @return
+	 */
+	private double[] getChangeDist(double[] curr_aicars, double curr_toMiddle, double change_toMiddle, double curr_speed, double curr_track_width, double curr_track_dist_straight, double curr_track_curve_type) {
+		
+
+		
+		double user_check_forward = 100;
+		double user_car_width = 2; // ÀüÆø 2m
+		double user_car_width_half = user_car_width/2; // ÀüÆø 2m
+		double ai_car_length      = 4.8; // ÀüÀå 4.8
+		double ai_car_length_half = ai_car_length/2; // ÀüÀå 4.8
+		
+		if(curr_speed >= 30){
+			user_check_forward = 100;
+		}else if(curr_speed < 30 && curr_speed >= 20){
+			user_check_forward = 50;
+		}else{
+			user_check_forward = 10;
+		}		
+		
+		System.out.println("user_check_forward         = "+user_check_forward);
+		
+//		/*Å×½ºÆ® ¼ÂÆÃ */
+//		user_check_forward = 20;
+//		/*Å×½ºÆ® ¼ÂÆÃ */
+
+		
+		double[] user_change_dist = new double[2]; // change_toMiddle;
+		user_change_dist[0] = change_toMiddle; // º¯°æÇÒ °Å¸® (ÃÊ±â´Â ÃÖÀûÈ­µÈ ÄÚ½º·Î ¼ÂÆÃ)
+		user_change_dist[1] = 100; // Àü¹æ Àå¾Ö¹° °Å¸®
+		
+		// Àü¹æ Â÷·® ¸ğµÎ °ËÁõ
+		double[] cars_dist = new double[2];
+		cars_dist[0] = 2; // Â÷·® ½Ç°Å¸®
+		cars_dist[1] = 2; // Â÷·® Áß½É°Å¸®(ÁÂ¿ì ÆÇ´Ü °¡´É)
+		
+		for(int i=0;i<5;i++){
+			System.out.println("dist_cars_dist[" + i + "]    = " + curr_aicars[i]);
+			System.out.println("dist_cars_middle[" + i + "]  = " + curr_aicars[i + 1]);
+			
+			if(i == 0 && curr_aicars[i] == 100){
+				System.out.println("Àü¹æ Àå¾Ö¹°Â÷·® ¾øÀ½");
+				break;
+			}else{
+				if(curr_aicars[i] == 100 || curr_aicars[i] > user_check_forward) {
+					System.out.println("Àü¹æ Â÷·®[" + i + "] ¹ø ¹«½Ã");
+					continue;
+				}
+			}
+			
+			
+			
+			cars_dist = this.getCarsDist(curr_toMiddle, change_toMiddle, curr_aicars[2*i + 1], curr_track_curve_type, user_car_width, ai_car_length);
+			
+			
+			// Â÷·® Áß½É°Å¸®°¡ À½¼ö ÀÌ¸é Â÷·®ÀÌ Ãæµ¹ÇÏ´Â °ÍÀ¸·Î ÆÇ´ÜÇÏ¿© ¿ìÈ¸
+			// TODO : ·ÎÁ÷ º¯°æ ÇÊ¿ä Â÷·® ½Ç°Å¸®
+			if(cars_dist[0] <=  1.2 ){
+				System.out.println("+++++++++++++++++ Àü¹æ Àå¾Ö¹° ¹ß°ß ¿ìÈ¸ ÇÏ¼¼¿ä ++++++++++++++++++++++");
+				System.out.println("Àü¹æ Â÷·®[" + i + "] ¹ø È¸ÇÇ");
+				if(cars_dist[1] > 0){ // Àå¾Ö¹° Â÷°¡ ¿ìÃø¿¡ Á¸Àç(¿ŞÂÊÀ¸·Î ±âº» ÀÌµ¿)
+					change_toMiddle = change_toMiddle + ( Math.abs(cars_dist[0]) + user_car_width );
+				}else if(cars_dist[1] < 0){ // Àå¾Ö¹° Â÷°¡ ÁÂÃø¿¡ Á¸Àç(¿À¸¥ÂÊÀ¸·Î ±âº» ÀÌµ¿)
+					change_toMiddle = change_toMiddle - ( Math.abs(cars_dist[0]) + user_car_width );
+				}else{
+					if(curr_track_curve_type == 1 ){ // ¿ìÈ¸Àü ÄÚ½º(¿À¸¥ÂÊÀ¸·Î ±âº» ÀÌµ¿)
+						change_toMiddle = change_toMiddle - ( Math.abs(cars_dist[0]) + user_car_width );
+					}else{ // ÁÂÈ¸Àü ÄÚ½º(¿ŞÂÊÀ¸·Î ±âº» ÀÌµ¿)
+						change_toMiddle = change_toMiddle + ( Math.abs(cars_dist[0]) + user_car_width );
+					}
+				}
+				user_change_dist[1] = curr_aicars[i];
+				break;
+			}else if(cars_dist[0] > 1.2 && cars_dist[0] <= 1.5) {
+				System.out.println("+++++++++++++++++ Àü¹æ Àå¾Ö¹° ¹ß°ß À¯Áö ÇÏ¼¼¿ä ++++++++++++++++++++++");
+				System.out.println("ÁÂ¿ì Â÷·®[" + i + "] È®ÀÎ ÇÊ¿ä");
+				if(cars_dist[1] > 0){ // ÁÂÃø¿¡ Á¸Àç
+					change_toMiddle = change_toMiddle + Math.abs(cars_dist[0]);
+				}else if(cars_dist[1] < 0){ // ¿ìÃø¿¡ Á¸Àç
+					change_toMiddle = change_toMiddle - Math.abs(cars_dist[0]);
+				}else{
+					if(curr_track_curve_type == 1 ){ // ¿ìÈ¸Àü ÄÚ½º
+						change_toMiddle = change_toMiddle + Math.abs(cars_dist[0]);
+					}else{ // ÁÂÈ¸Àü ÄÚ½º
+						change_toMiddle = change_toMiddle - Math.abs(cars_dist[0]);
+					}
+				}
+			}			
+		}
+		
+		user_change_dist[0] = change_toMiddle;
+		
+		System.out.println("change_toMiddle         = "+change_toMiddle);
+		System.out.println("user_change_middle      = "+user_change_dist[0]);
+		System.out.println("user_ai_car_dist        = "+user_change_dist[1]);
+		
+				
+		return user_change_dist;
+	}
+	
+	/**
+	 * Â÷·®°£ ½Ç°Å¸® °è»ê
+	 * @param user_car_toMiddle
+	 * @param ai_car_toMiddle
+	 * @param curr_track_curve_type
+	 * @param user_car_width_half
+	 * @param ai_car_length_half
+	 * @return
+	 */
+	private double[] getCarsDist(double curr_toMiddle, double user_change_toMiddle, double ai_car_toMiddle, double curr_track_curve_type, double user_car_width, double ai_car_length){
+		double[] cars_dist = new double[2];
+		cars_dist[0] =  0; // Â÷·®°£ ½Ç°Å¸®
+		cars_dist[1] =  0; // Â÷·® Áß½É°Å¸®(ÁÂ¿ì ÆÇ´Ü °¡´É)
+		
+		double cars_middle_dist = curr_toMiddle - ai_car_toMiddle; // Â÷·®°úÀÇ Áß½É °Å¸®
+		cars_dist[1] = cars_middle_dist;
+		System.out.println("cars_middle_dist(Áß½É°Å¸®) = "+cars_middle_dist); 
+		
+		// Â÷·®°£ ½Ç°Å¸® (Â÷ÆøÀ» °í·ÁÇÏ¿© °è»ê)
+		cars_dist[0] = Math.abs(cars_middle_dist) - user_car_width/2 - ai_car_length/2;		
+		System.out.println("cars_dist(½Ç°Å¸®)         = "+cars_dist[0]);
+		
+		return cars_dist;		
 	}
 	
 			
