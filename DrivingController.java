@@ -141,8 +141,8 @@ public class DrivingController {
 		
 		/* --- 트랙조건에 따른 angle계수 추가 함수 필요 : 우열책임 -- */
 		// angle값에 대한 계수 계산(속도, 트랙의 조건에 따라 계산)
-//		streer_coeff = this.getSteerCoeff(speed, track_dist_straight);
-		streer_coeff = this.getSteerCoeff2(track_current_angle, track_forward_angles, track_curve_type);
+		streer_coeff = this.getSteerCoeff(speed, track_dist_straight);
+//		streer_coeff = this.getSteerCoeff2(track_current_angle, track_forward_angles, track_curve_type);
 		
 		// 전방 장애물이 있는 경우 
 		if(emer_turn_yn > 0.0) {
@@ -650,7 +650,7 @@ public class DrivingController {
 			//if(tmp_c_ai_cnt > 0  || curr_aicars[tmp_l_ai[0]] < 3.0) {
 			if(tmp_c_ai_cnt > 0) {
 				//corr_toMiddle = (curr_track_width/2 + curr_toMiddle)/2;
-				corr_toMiddle = 3.0 + this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_c_ai[0]]);  // 전방 장애물차의 차폭을 2.5M라고 가정
+				corr_toMiddle = 2.7 + this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_c_ai[0]]);  // 전방 장애물차의 차폭을 2.5M라고 가정
 				
 				emer_turn_yn = 1.0;
 				// 트랙 바깥으로 벗어나는 경우 트랙까지만 경로 셋팅...전방에 있는 장애물과 부딪힐 경우도 생각해야함...
@@ -675,7 +675,7 @@ public class DrivingController {
 			//if(tmp_c_ai_cnt > 0 || curr_aicars[tmp_r_ai[0]] > -3.0) {
 			if(tmp_c_ai_cnt > 0) {
 				//corr_toMiddle = (-curr_track_width/2 + curr_toMiddle)/2;
-				corr_toMiddle = -3.0 + this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_c_ai[0]]);
+				corr_toMiddle = -2.7 + this.getAiSideDist(curr_toMiddle, curr_aicars[tmp_c_ai[0]]);
 				
 				System.out.println("  이동할 거리 : " + corr_toMiddle + ", 트랙까지 거리 : " + (-curr_track_width/2 + curr_toMiddle));
 				emer_turn_yn = 1.0;
@@ -797,7 +797,7 @@ public class DrivingController {
 						
 						// 직선주로에서 
 						if (curr_track_dist_straight > 0.0 ) {
-							corr_toMiddle = tmp_fst_forward_width - my_car_width - 2.0;
+							corr_toMiddle = tmp_fst_forward_width - my_car_width - 3.0;
 						} else {
 							corr_toMiddle = (curr_track_width-2)/2 + curr_toMiddle;
 						}
@@ -819,7 +819,7 @@ public class DrivingController {
 						
 						// 직선주로에서 
 						if (curr_track_dist_straight > 0.0 ) {
-							corr_toMiddle = tmp_fst_forward_width + my_car_width + 2.0;
+							corr_toMiddle = tmp_fst_forward_width + my_car_width + 3.0;
 						} else {
 							corr_toMiddle = -(curr_track_width-2)/2 + curr_toMiddle;
 						}
